@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:francesco_farag/routing/app_route.dart';
 import 'package:francesco_farag/routing/app_routing.dart';
 
 void main() {

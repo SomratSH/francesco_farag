@@ -85,19 +85,22 @@ class _CustomerLoginState extends State<CustomerLogin> {
               ),
 
               const SizedBox(height: 24),
-              DecoratedBox(
-                decoration: BoxDecoration(
-                  gradient: AppColors().gradientPink,
-                  borderRadius: BorderRadius.circular(15),
-                ),
-                child: Padding(
-                  padding: const EdgeInsets.all(12.0),
-                  child: Center(
-                    child: Text(
-                      "Login",
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.w700,
+              InkWell(
+                onTap: () => context.go(AppRoute.homeCustomer),
+                child: DecoratedBox(
+                  decoration: BoxDecoration(
+                    gradient: AppColors().gradientPink,
+                    borderRadius: BorderRadius.circular(15),
+                  ),
+                  child: Padding(
+                    padding: const EdgeInsets.all(12.0),
+                    child: Center(
+                      child: Text(
+                        "Login",
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.w700,
+                        ),
                       ),
                     ),
                   ),

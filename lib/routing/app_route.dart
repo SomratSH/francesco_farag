@@ -10,4 +10,42 @@ class AppRoute {
   static String createNewPassword = "/create-new-password";
 
   static String passwordChanged = "/password-changed";
+
+
+  //agent shell routing
+  static String home = "/agent-home";
+  static String message = "/agent-message";
+  static String profile = "/agent-profile";
+  static String  rentals = "/agent-rentals";
+  static String agentChat = "/agent-chat";
+  static String editProfile = "/edit-profile";
+  static String bookingRequest = "/agent-booking-request";
+  static String crateQuatation = "/agent-create-quatation";
+  static String createFine = "/agent-create-fine";
+  static String checkinout = "/agent-check-inout";
+  static String checkinProgress = "/agent-check-inprogess";
+  static String checkoutProgess = "/agent-check-outprogess";
+
+
+
+  //customer shell
+  static String homeCustomer = "/customer-home";
+  static String rentalsCustomer = "/customer-rentals";
+  static String messageCustomer = "/customer-message";
+  static String profileCustomer = "/customer-profile";
+
+  static String driverLiencse = "/driver-liense";
+  static String customerChat = "/customer-chat";
+  static String customerEditProfile = "/customer-edit-profile";
+  static String allCarCustomer = "/all-cars-customer";
+  static String carDetails = "/car-details";
+
+  static String customerRequestQuatation = "/customer-request-quatation";
+
+
+
+  static String rentalsAssingment = "/rentals-assingment";
+
+
+
 }

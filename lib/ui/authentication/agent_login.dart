@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:francesco_farag/routing/app_route.dart';
+import 'package:francesco_farag/ui/agent/home/home_page.dart';
 import 'package:francesco_farag/utils/app_colors.dart';
 import 'package:go_router/go_router.dart';
 
@@ -85,19 +86,25 @@ class _AgentLoginState extends State<AgentLogin> {
               ),
 
               const SizedBox(height: 24),
-              DecoratedBox(
-                decoration: BoxDecoration(
-                  gradient: AppColors().gradientBlue,
-                  borderRadius: BorderRadius.circular(15),
-                ),
-                child: Padding(
-                  padding: const EdgeInsets.all(12.0),
-                  child: Center(
-                    child: Text(
-                      "Login",
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.w700,
+              InkWell(
+                onTap: (){
+                  context.go(AppRoute.home);
+                },
+                
+                child: DecoratedBox(
+                  decoration: BoxDecoration(
+                    gradient: AppColors().gradientBlue,
+                    borderRadius: BorderRadius.circular(15),
+                  ),
+                  child: Padding(
+                    padding: const EdgeInsets.all(12.0),
+                    child: Center(
+                      child: Text(
+                        "Login",
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.w700,
+                        ),
                       ),
                     ),
                   ),
