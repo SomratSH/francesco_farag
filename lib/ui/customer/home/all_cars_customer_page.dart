@@ -20,13 +20,23 @@ class _AllCarsCustomerPageState extends State<AllCarsCustomerPage> {
       appBar: AppBar(
         backgroundColor: Colors.white,
         elevation: 0.5,
-        leading:  InkWell(
+        leading: InkWell(
           onTap: () => context.pop(),
-          child: Icon(Icons.arrow_back, color: Colors.black87)),
-        title: const Text('All Agency Cars', 
-          style: TextStyle(color: Colors.black87, fontWeight: FontWeight.bold, fontSize: 16)),
+          child: Icon(Icons.arrow_back, color: Colors.black87),
+        ),
+        title: const Text(
+          'All Agency Cars',
+          style: TextStyle(
+            color: Colors.black87,
+            fontWeight: FontWeight.bold,
+            fontSize: 16,
+          ),
+        ),
         actions: [
-          IconButton(onPressed: () {}, icon: const Icon(Icons.tune, color: Colors.black87))
+          IconButton(
+            onPressed: () {},
+            icon: const Icon(Icons.tune, color: Colors.black87),
+          ),
         ],
         centerTitle: true,
       ),
@@ -51,13 +61,16 @@ class _AllCarsCustomerPageState extends State<AllCarsCustomerPage> {
                       setState(() => selectedCategory = categories[index]);
                     },
                     selectedColor: Colors.blue,
+
                     labelStyle: TextStyle(
                       color: isSelected ? Colors.white : Colors.grey,
                       fontSize: 12,
                       fontWeight: FontWeight.w500,
                     ),
                     backgroundColor: Colors.grey.shade100,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(20),
+                    ),
                   ),
                 );
               },
@@ -78,7 +91,8 @@ class _AllCarsCustomerPageState extends State<AllCarsCustomerPage> {
                     price: '89',
                     rating: '4.8',
                     specs: '5 seats • Automatic',
-                    imageUrl: 'https://images.unsplash.com/photo-1560958089-b8a1929cea89?q=80&w=2071&auto=format&fit=crop',
+                    imageUrl:
+                        'https://images.unsplash.com/photo-1560958089-b8a1929cea89?q=80&w=2071&auto=format&fit=crop',
                   ),
                 );
               },
@@ -92,15 +106,15 @@ class _AllCarsCustomerPageState extends State<AllCarsCustomerPage> {
 
 class CarListItem extends StatelessWidget {
   final String name, type, price, rating, specs, imageUrl;
-  
+
   const CarListItem({
-    super.key, 
-    required this.name, 
-    required this.type, 
-    required this.price, 
-    required this.rating, 
-    required this.specs, 
-    required this.imageUrl
+    super.key,
+    required this.name,
+    required this.type,
+    required this.price,
+    required this.rating,
+    required this.specs,
+    required this.imageUrl,
   });
 
   @override
@@ -110,7 +124,13 @@ class CarListItem extends StatelessWidget {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
-        boxShadow: [BoxShadow(color: Colors.grey.shade100, blurRadius: 10, offset: const Offset(0, 4))],
+        boxShadow: [
+          BoxShadow(
+            color: Colors.grey.shade100,
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -119,20 +139,39 @@ class CarListItem extends StatelessWidget {
           Stack(
             children: [
               ClipRRect(
-                borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
-                child: Image.network(imageUrl, height: 180, width: double.infinity, fit: BoxFit.cover),
+                borderRadius: const BorderRadius.vertical(
+                  top: Radius.circular(16),
+                ),
+                child: Image.network(
+                  imageUrl,
+                  height: 180,
+                  width: double.infinity,
+                  fit: BoxFit.cover,
+                ),
               ),
               Positioned(
                 top: 12,
                 right: 12,
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                  decoration: BoxDecoration(color: Colors.white.withOpacity(0.9), borderRadius: BorderRadius.circular(8)),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 4,
+                  ),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.9),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
                   child: Row(
                     children: [
                       const Icon(Icons.star, color: Colors.orange, size: 14),
                       const SizedBox(width: 4),
-                      Text(rating, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
+                      Text(
+                        rating,
+                        style: const TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 12,
+                        ),
+                      ),
                     ],
                   ),
                 ),
@@ -149,47 +188,89 @@ class CarListItem extends StatelessWidget {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text(name, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                    Text(
+                      name,
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
+                      ),
+                    ),
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                      decoration: BoxDecoration(color: Colors.pink.shade50, borderRadius: BorderRadius.circular(10)),
-                      child: Text(type, style: TextStyle(color: Colors.pink.shade400, fontSize: 10, fontWeight: FontWeight.bold)),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 2,
+                      ),
+                      decoration: BoxDecoration(
+                        color: Colors.pink.shade50,
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: Text(
+                        type,
+                        style: TextStyle(
+                          color: Colors.pink.shade400,
+                          fontSize: 10,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
                     ),
                   ],
                 ),
-                const SizedBox(height: 4),
-                Text(specs, style: const TextStyle(color: Colors.grey, fontSize: 12)),
+
                 const SizedBox(height: 16),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
+                    Text(
+                      specs,
+                      style: const TextStyle(color: Colors.grey, fontSize: 12),
+                    ),
                     RichText(
                       text: TextSpan(
                         children: [
-                          TextSpan(text: '\$$price', style: const TextStyle(color: Colors.black, fontWeight: FontWeight.bold, fontSize: 18)),
-                          const TextSpan(text: '/day', style: TextStyle(color: Colors.grey, fontSize: 12)),
+                          TextSpan(
+                            text: '\$$price',
+                            style: const TextStyle(
+                              color: Colors.black,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 18,
+                            ),
+                          ),
+                          const TextSpan(
+                            text: '/day',
+                            style: TextStyle(color: Colors.grey, fontSize: 12),
+                          ),
                         ],
                       ),
                     ),
+
                     // Gradient "Request" Button
-                    Container(
-                      width: 120,
-                      height: 36,
-                      decoration: BoxDecoration(
-                        gradient: const LinearGradient(colors: [Color(0xFF64B5F6), Color(0xFF3949AB)]),
-                        borderRadius: BorderRadius.circular(18),
-                      ),
-                      child: ElevatedButton(
-                        onPressed: () {},
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.transparent, 
-                          shadowColor: Colors.transparent,
-                          padding: EdgeInsets.zero,
-                        ),
-                        child: const Text('Request', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13)),
+                  ],
+                ),
+                SizedBox(height: 10),
+                Container(
+                  width: double.infinity,
+                  decoration: BoxDecoration(
+                    gradient: const LinearGradient(
+                      colors: [Color(0xFF64B5F6), Color(0xFF3949AB)],
+                    ),
+                    borderRadius: BorderRadius.circular(18),
+                  ),
+                  child: ElevatedButton(
+                    onPressed: () {},
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.transparent,
+                      shadowColor: Colors.transparent,
+                      padding: EdgeInsets.zero,
+                    ),
+                    child: const Text(
+                      'Request',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 13,
                       ),
                     ),
-                  ],
+                  ),
                 ),
               ],
             ),

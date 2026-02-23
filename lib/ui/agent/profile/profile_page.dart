@@ -17,7 +17,7 @@ class ProfilePage extends StatelessWidget {
             Container(
               width: double.infinity,
               padding: const EdgeInsets.only(top: 60, bottom: 40),
-              decoration:  BoxDecoration(
+              decoration: BoxDecoration(
                 gradient: AppColors().gradientPink,
                 borderRadius: BorderRadius.only(
                   bottomLeft: Radius.circular(30),
@@ -31,17 +31,26 @@ class ProfilePage extends StatelessWidget {
                     backgroundColor: Colors.white,
                     child: CircleAvatar(
                       radius: 47,
-                      backgroundImage: NetworkImage('https://i.pravatar.cc/150?u=john'),
+                      backgroundImage: NetworkImage(
+                        'https://i.pravatar.cc/150?u=john',
+                      ),
                     ),
                   ),
                   const SizedBox(height: 12),
                   const Text(
                     'John Smith',
-                    style: TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.bold),
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 22,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                   Text(
                     'john@example.com',
-                    style: TextStyle(color: Colors.white.withOpacity(0.8), fontSize: 14),
+                    style: TextStyle(
+                      color: Colors.white.withOpacity(0.8),
+                      fontSize: 14,
+                    ),
                   ),
                 ],
               ),
@@ -56,9 +65,21 @@ class ProfilePage extends StatelessWidget {
                     title: 'Personal Information',
                     showEdit: true,
                     children: [
-                      InfoTile(icon: Icons.person_outline, label: 'Full Name', value: 'Sahrah Johnson'),
-                      InfoTile(icon: Icons.mail_outline, label: 'Email', value: 'sarah@eurocar.com'),
-                      InfoTile(icon: Icons.phone_outlined, label: 'Phone', value: '+1234567890'),
+                      InfoTile(
+                        icon: Icons.person_outline,
+                        label: 'Full Name',
+                        value: 'Sahrah Johnson',
+                      ),
+                      InfoTile(
+                        icon: Icons.mail_outline,
+                        label: 'Email',
+                        value: 'sarah@eurocar.com',
+                      ),
+                      InfoTile(
+                        icon: Icons.phone_outlined,
+                        label: 'Phone',
+                        value: '+1234567890',
+                      ),
                     ],
                   ),
 
@@ -72,8 +93,14 @@ class ProfilePage extends StatelessWidget {
                           backgroundColor: Color(0xFFECEFF1),
                           child: Text('🚗', style: TextStyle(fontSize: 20)),
                         ),
-                        title: Text('EuroCar Rentals', style: TextStyle(fontWeight: FontWeight.bold)),
-                        subtitle: Text('Verified Partner', style: TextStyle(color: Colors.grey)),
+                        title: Text(
+                          'EuroCar Rentals',
+                          style: TextStyle(fontWeight: FontWeight.bold),
+                        ),
+                        subtitle: Text(
+                          'Verified Partner',
+                          style: TextStyle(color: Colors.grey),
+                        ),
                       ),
                     ],
                   ),
@@ -82,9 +109,21 @@ class ProfilePage extends StatelessWidget {
                   const SectionCard(
                     title: 'Quick Actions',
                     children: [
-                      ActionTile(icon: Icons.description_outlined, color: Colors.blue, label: 'Manage Bookings'),
-                      ActionTile(icon: Icons.chat_outlined, color: Colors.orange, label: 'Customer Messages'),
-                      ActionTile(icon: Icons.assignment_turned_in_outlined, color: Colors.blueGrey, label: 'Booking Status'),
+                      ActionTile(
+                        icon: Icons.description_outlined,
+                        color: Colors.blue,
+                        label: 'Manage Bookings',
+                      ),
+                      ActionTile(
+                        icon: Icons.chat_outlined,
+                        color: Colors.orange,
+                        label: 'Customer Messages',
+                      ),
+                      ActionTile(
+                        icon: Icons.assignment_turned_in_outlined,
+                        color: Colors.blueGrey,
+                        label: 'Booking Status',
+                      ),
                     ],
                   ),
 
@@ -105,13 +144,24 @@ class ProfilePage extends StatelessWidget {
                     width: double.infinity,
                     height: 55,
                     decoration: BoxDecoration(
-                      gradient: const LinearGradient(colors: [Color(0xFFF06292), Color(0xFFD81B60)]),
+                      gradient: const LinearGradient(
+                        colors: [Color(0xFFF06292), Color(0xFFD81B60)],
+                      ),
                       borderRadius: BorderRadius.circular(30),
                     ),
                     child: TextButton.icon(
-                      onPressed: () {},
+                      onPressed: () {
+                        context.go(AppRoute.welcome);
+                      },
                       icon: const Icon(Icons.logout, color: Colors.white),
-                      label: const Text('Logout', style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
+                      label: const Text(
+                        'Logout',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
                     ),
                   ),
                 ],
@@ -131,7 +181,12 @@ class SectionCard extends StatelessWidget {
   final bool showEdit;
   final List<Widget> children;
 
-  const SectionCard({super.key, this.title, this.showEdit = false, required this.children});
+  const SectionCard({
+    super.key,
+    this.title,
+    this.showEdit = false,
+    required this.children,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -143,7 +198,13 @@ class SectionCard extends StatelessWidget {
         color: Colors.white,
         borderRadius: BorderRadius.circular(20),
         border: Border.all(color: Colors.grey.shade100),
-        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.02), blurRadius: 10, offset: const Offset(0, 4))],
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.02),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -152,10 +213,15 @@ class SectionCard extends StatelessWidget {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text(title!, style:  TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-                if (showEdit) InkWell(
-                  onTap: () => context.push(AppRoute.editProfile),
-                  child: const Icon(Icons.edit_note, color: Colors.black54)),
+                Text(
+                  title!,
+                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                ),
+                if (showEdit)
+                  InkWell(
+                    onTap: () => context.push(AppRoute.editProfile),
+                    child: const Icon(Icons.edit_note, color: Colors.black54),
+                  ),
               ],
             ),
           if (title != null) const SizedBox(height: 15),
@@ -171,7 +237,12 @@ class InfoTile extends StatelessWidget {
   final String label;
   final String value;
 
-  const InfoTile({super.key, required this.icon, required this.label, required this.value});
+  const InfoTile({
+    super.key,
+    required this.icon,
+    required this.label,
+    required this.value,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -181,14 +252,20 @@ class InfoTile extends StatelessWidget {
         children: [
           Container(
             padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(color: const Color(0xFFE8EAF6), borderRadius: BorderRadius.circular(10)),
+            decoration: BoxDecoration(
+              color: const Color(0xFFE8EAF6),
+              borderRadius: BorderRadius.circular(10),
+            ),
             child: Icon(icon, color: const Color(0xFF3F51B5), size: 20),
           ),
           const SizedBox(width: 15),
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(label, style: const TextStyle(color: Colors.grey, fontSize: 12)),
+              Text(
+                label,
+                style: const TextStyle(color: Colors.grey, fontSize: 12),
+              ),
               Text(value, style: const TextStyle(fontWeight: FontWeight.w500)),
             ],
           ),
@@ -203,7 +280,12 @@ class ActionTile extends StatelessWidget {
   final Color color;
   final String label;
 
-  const ActionTile({super.key, required this.icon, required this.color, required this.label});
+  const ActionTile({
+    super.key,
+    required this.icon,
+    required this.color,
+    required this.label,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -213,7 +295,10 @@ class ActionTile extends StatelessWidget {
         children: [
           Icon(icon, color: color, size: 22),
           const SizedBox(width: 15),
-          Text(label, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500)),
+          Text(
+            label,
+            style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
+          ),
         ],
       ),
     );
@@ -228,7 +313,10 @@ class TextLink extends StatelessWidget {
   Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8),
-      child: Text(label, style: const TextStyle(color: Colors.black87, fontSize: 14)),
+      child: Text(
+        label,
+        style: const TextStyle(color: Colors.black87, fontSize: 14),
+      ),
     );
   }
 }

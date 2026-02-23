@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import 'package:flutter/material.dart';
 import 'package:francesco_farag/routing/app_route.dart';
+import 'package:francesco_farag/utils/app_colors.dart';
 import 'package:go_router/go_router.dart';
 
 class MessageCustomer extends StatelessWidget {
@@ -15,10 +16,15 @@ class MessageCustomer extends StatelessWidget {
         children: [
           // Header Section
           Container(
-            padding: const EdgeInsets.only(top: 60, left: 20, right: 20, bottom: 30),
+            padding: const EdgeInsets.only(
+              top: 60,
+              left: 20,
+              right: 20,
+              bottom: 30,
+            ),
             width: double.infinity,
-            decoration: const BoxDecoration(
-              color: Color(0xFFE91E63), // Pinkish-magenta
+            decoration: BoxDecoration(
+              gradient: AppColors().gradientPink, // Pinkish-magenta
               borderRadius: BorderRadius.only(
                 bottomLeft: Radius.circular(12),
                 bottomRight: Radius.circular(12),
@@ -48,26 +54,24 @@ class MessageCustomer extends StatelessWidget {
           Expanded(
             child: ListView(
               padding: const EdgeInsets.all(16),
-              children:  [
-                             
-
-                   InkWell(
-                    onTap: () {
-                        context.push(AppRoute.customerChat);
-                    },
-                     child: MessageTile(
-                      initial: 'S',
-                      name: 'Sarah Johnson',
-                      message: 'Your car is ready for pickup',
-                      time: '10:30 AM',
-                      unreadCount: 2,
-                                       ),
-                   ),
-                
+              children: [
                 InkWell(
-                   onTap: () {
-                        context.push(AppRoute.customerChat);
-                    },
+                  onTap: () {
+                    context.push(AppRoute.customerChat);
+                  },
+                  child: MessageTile(
+                    initial: 'S',
+                    name: 'Sarah Johnson',
+                    message: 'Your car is ready for pickup',
+                    time: '10:30 AM',
+                    unreadCount: 2,
+                  ),
+                ),
+
+                InkWell(
+                  onTap: () {
+                    context.push(AppRoute.customerChat);
+                  },
                   child: MessageTile(
                     initial: 'M',
                     name: 'Madrid Centro Branch',
@@ -76,9 +80,9 @@ class MessageCustomer extends StatelessWidget {
                   ),
                 ),
                 InkWell(
-                   onTap: () {
-                        context.push(AppRoute.customerChat);
-                    },
+                  onTap: () {
+                    context.push(AppRoute.customerChat);
+                  },
                   child: MessageTile(
                     initial: 'T',
                     name: 'TinDrive Agency',
@@ -90,10 +94,8 @@ class MessageCustomer extends StatelessWidget {
             ),
           ),
         ],
-      )
+      ),
     );
-      
-     
   }
 }
 
@@ -139,10 +141,7 @@ class MessageTile extends StatelessWidget {
           name,
           style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
         ),
-        subtitle: Text(
-          message,
-          style: TextStyle(color: Colors.grey.shade600),
-        ),
+        subtitle: Text(message, style: TextStyle(color: Colors.grey.shade600)),
         trailing: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           crossAxisAlignment: CrossAxisAlignment.end,

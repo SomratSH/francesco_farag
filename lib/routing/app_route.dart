@@ -11,12 +11,11 @@ class AppRoute {
 
   static String passwordChanged = "/password-changed";
 
-
   //agent shell routing
   static String home = "/agent-home";
   static String message = "/agent-message";
   static String profile = "/agent-profile";
-  static String  rentals = "/agent-rentals";
+  static String rentals = "/agent-rentals";
   static String agentChat = "/agent-chat";
   static String editProfile = "/edit-profile";
   static String bookingRequest = "/agent-booking-request";
@@ -25,8 +24,6 @@ class AppRoute {
   static String checkinout = "/agent-check-inout";
   static String checkinProgress = "/agent-check-inprogess";
   static String checkoutProgess = "/agent-check-outprogess";
-
-
 
   //customer shell
   static String homeCustomer = "/customer-home";
@@ -42,10 +39,7 @@ class AppRoute {
 
   static String customerRequestQuatation = "/customer-request-quatation";
 
-
-
   static String rentalsAssingment = "/rentals-assingment";
 
-
-
+  static String advancedFilter = "/advanced-filter";
 }

@@ -21,6 +21,7 @@ import 'package:francesco_farag/ui/authentication/password_change.dart';
 import 'package:francesco_farag/ui/authentication/signup_customer_screen.dart';
 import 'package:francesco_farag/ui/authentication/splash_screen.dart';
 import 'package:francesco_farag/ui/authentication/welcome_screen.dart';
+import 'package:francesco_farag/ui/customer/home/advanced_filter.dart';
 import 'package:francesco_farag/ui/customer/home/all_cars_customer_page.dart';
 import 'package:francesco_farag/ui/customer/home/car_details_page.dart';
 import 'package:francesco_farag/ui/customer/home/customer_request_quatation.dart';
@@ -86,9 +87,8 @@ class AppRouting {
         builder: (context, state) => const PasswordChange(),
       ),
 
-
-      //agent 
-        ShellRoute(
+      //agent
+      ShellRoute(
         builder: (context, state, child) => AgentLandingPage(child: child),
         routes: [
           GoRoute(
@@ -124,7 +124,7 @@ class AppRouting {
         name: 'agent-booking-request',
         builder: (context, state) => const BookingRequestScreen(),
       ),
-       GoRoute(
+      GoRoute(
         path: AppRoute.crateQuatation,
         name: 'agent-create-quatation',
         builder: (context, state) => const CreateQuotationScreen(),
@@ -139,18 +139,16 @@ class AppRouting {
         name: 'agent-check-inout',
         builder: (context, state) => const CheckInOutScreen(),
       ),
-       GoRoute(
+      GoRoute(
         path: AppRoute.checkinProgress,
         name: 'agent-check-inprogress',
         builder: (context, state) => const CheckInProcessScreen(),
       ),
-        GoRoute(
+      GoRoute(
         path: AppRoute.checkoutProgess,
         name: 'agent-check-outprogress',
         builder: (context, state) => const CheckoutProgessPage(),
       ),
-
-
 
       //customer shell
       ShellRoute(
@@ -184,12 +182,12 @@ class AppRouting {
         name: 'customer-chat',
         builder: (context, state) => const CustomerChat(),
       ),
-       GoRoute(
+      GoRoute(
         path: AppRoute.customerEditProfile,
         name: 'customer-edit-profile',
         builder: (context, state) => const EditProfileCustomer(),
       ),
-       GoRoute(
+      GoRoute(
         path: AppRoute.allCarCustomer,
         name: 'all-customer-car',
         builder: (context, state) => const AllCarsCustomerPage(),
@@ -199,15 +197,20 @@ class AppRouting {
         name: 'car-details',
         builder: (context, state) => const CarDetailsScreen(),
       ),
-       GoRoute(
+      GoRoute(
         path: AppRoute.customerRequestQuatation,
         name: 'customer-request-quatation',
         builder: (context, state) => const CustomerRequestQuatation(),
       ),
-       GoRoute(
+      GoRoute(
         path: AppRoute.rentalsAssingment,
         name: 'rentals-assingment',
         builder: (context, state) => const RentalAssignmentScreen(),
+      ),
+      GoRoute(
+        path: AppRoute.advancedFilter,
+        name: 'advanced-filter',
+        builder: (context, state) => const AdvancedFilter(),
       ),
     ],
   );
