@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:francesco_farag/utils/app_colors.dart';
+import 'package:go_router/go_router.dart';
 
 class CheckoutProgessPage extends StatefulWidget {
   const CheckoutProgessPage({super.key});
@@ -18,7 +19,12 @@ class _CheckoutProgessPageState extends State<CheckoutProgessPage> {
       appBar: AppBar(
         backgroundColor: Colors.white,
         elevation: 0.5,
-        leading: const Icon(Icons.arrow_back, color: Colors.black87),
+        leading: InkWell(
+          onTap: () {
+            context.pop();
+          },
+          child: Icon(Icons.arrow_back, color: Colors.black87),
+        ),
         title: const Text(
           'Checkout',
           style: TextStyle(color: Colors.black87, fontWeight: FontWeight.bold),

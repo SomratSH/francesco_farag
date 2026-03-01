@@ -42,4 +42,18 @@ class AppRoute {
   static String rentalsAssingment = "/rentals-assingment";
 
   static String advancedFilter = "/advanced-filter";
+
+  static String checkinFirstStep = "/checkin-step-one";
+
+  static String checkinSecondStep = "/checkin-step-two";
+
+  static String checkingThreeStep = "/checkin-step-three";
+
+  static String checkinFourStep = "/checkin-step-four";
+
+  static String checkinFiveStep = "/checkin-step-five";
+
+  static String checkinSixStep = "/checkin-step-six";
+
+  static String bookingDetails = "/booking-details";
 }

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/svg.dart';
 import 'package:francesco_farag/routing/app_route.dart';
 import 'package:francesco_farag/utils/app_colors.dart';
 import 'package:go_router/go_router.dart';
@@ -212,14 +213,19 @@ class HomeCustomer extends StatelessWidget {
                     type: 'Economy',
                     price: '89',
                     seats: '5',
-                    transmission: 'Automatic',
+
+                    gear: 'Automatic',
+                    door: 4,
+                    engineType: "Diesel",
                   ),
                   CarCard(
                     name: 'BMW 5 Series',
                     type: 'Luxury',
                     price: '129',
                     seats: '5',
-                    transmission: 'Automatic',
+                    gear: 'Automatic',
+                    door: 4,
+                    engineType: "Diesel",
                   ),
                 ],
               ),
@@ -389,43 +395,58 @@ class HomeCustomer extends StatelessWidget {
 }
 
 class CarCard extends StatelessWidget {
-  final String name, type, price, seats, transmission;
+  final String name, type, price, seats, gear, engineType;
+  final int door;
+
   const CarCard({
     super.key,
+    required this.gear,
+    required this.engineType,
     required this.name,
     required this.type,
     required this.price,
     required this.seats,
-    required this.transmission,
+    required this.door,
   });
 
   @override
   Widget build(BuildContext context) {
     return Container(
+      height: 300,
       width: 260,
       margin: const EdgeInsets.only(right: 16, bottom: 10, top: 5),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(20),
-        boxShadow: [BoxShadow(color: Colors.grey.shade200, blurRadius: 10)],
+        boxShadow: [
+          BoxShadow(
+            color: Colors.grey.withOpacity(0.1),
+            blurRadius: 10,
+            offset: const Offset(0, 5),
+          ),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min, // Prevents unnecessary stretching
         children: [
+          // Image Section
           ClipRRect(
             borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
             child: Image.network(
               'https://images.unsplash.com/photo-1560958089-b8a1929cea89?q=80&w=2071&auto=format&fit=crop',
-              height: 140,
+              height: 110,
               width: double.infinity,
               fit: BoxFit.cover,
             ),
           ),
+
           Padding(
             padding: const EdgeInsets.all(12),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                // Title and Tag
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
@@ -436,66 +457,144 @@ class CarCard extends StatelessWidget {
                         fontSize: 16,
                       ),
                     ),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 8,
-                        vertical: 2,
-                      ),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFFCE4EC),
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      child: Text(
-                        type,
-                        style: const TextStyle(
-                          color: Color(0xFFE91E63),
-                          fontSize: 10,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ),
+                    _buildTypeTag(type),
                   ],
                 ),
-                Text(
-                  '$seats seats • $transmission',
-                  style: const TextStyle(color: Colors.grey, fontSize: 12),
+
+                const SizedBox(height: 12),
+
+                // Features Grid (Replacing nested Columns for better spacing)
+                _buildFeatureRow(
+                  Icons.group,
+                  "$seats Seats",
+                  "assets/icons/mdi_car-door.svg",
+                  "$door Door",
                 ),
-                const SizedBox(height: 10),
+                const SizedBox(height: 8),
+                _buildFeatureRow(
+                  null,
+                  gear,
+                  "assets/icons/bi_fuel-pump-diesel.svg",
+                  engineType,
+                  svgLeft: "assets/icons/gear_type.svg",
+                ),
+
+                const SizedBox(height: 16),
+
+                // Pricing and Button
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text(
-                      '\$$price/day',
-                      style: const TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 16,
+                    Text.rich(
+                      TextSpan(
+                        children: [
+                          TextSpan(
+                            text: '\$$price',
+                            style: const TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 18,
+                            ),
+                          ),
+                          const TextSpan(
+                            text: '/day',
+                            style: TextStyle(color: Colors.grey, fontSize: 12),
+                          ),
+                        ],
                       ),
                     ),
-                    Container(
-                      decoration: BoxDecoration(
-                        gradient: AppColors().gradientBlue,
-                        borderRadius: BorderRadius.circular(15),
-                      ),
-                      child: ElevatedButton(
-                        onPressed: () {},
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.transparent,
-                          shadowColor: Colors.transparent,
-                          padding: const EdgeInsets.symmetric(horizontal: 15),
-                          minimumSize: const Size(80, 30),
-                        ),
-                        child: const Text(
-                          'Request',
-                          style: TextStyle(color: Colors.white, fontSize: 12),
-                        ),
-                      ),
-                    ),
+                    _buildRequestButton(),
                   ],
                 ),
               ],
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  // --- Helper Widgets to keep the build method clean ---
+
+  Widget _buildTypeTag(String text) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: const Color(0xFFFCE4EC),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Text(
+        text,
+        style: const TextStyle(
+          color: Color(0xFFE91E63),
+          fontSize: 10,
+          fontWeight: FontWeight.bold,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildFeatureRow(
+    IconData? iconLeft,
+    String labelLeft,
+    String svgRight,
+    String labelRight, {
+    String? svgLeft,
+  }) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        _buildIconText(iconLeft, labelLeft, svgLeft),
+        _buildIconText(null, labelRight, svgRight),
+      ],
+    );
+  }
+
+  Widget _buildIconText(IconData? icon, String label, String? svgPath) {
+    return Row(
+      children: [
+        svgPath != null
+            ? SvgPicture.asset(
+                svgPath,
+                width: 16,
+                height: 16,
+                colorFilter: const ColorFilter.mode(
+                  Colors.grey,
+                  BlendMode.srcIn,
+                ),
+              )
+            : Icon(icon, size: 16, color: Colors.grey),
+        const SizedBox(width: 4),
+        Text(label, style: const TextStyle(fontSize: 12, color: Colors.grey)),
+      ],
+    );
+  }
+
+  Widget _buildRequestButton() {
+    return Container(
+      height: 32,
+      decoration: BoxDecoration(
+        // Replace AppColors().gradientBlue with your actual gradient or a solid color
+        gradient: AppColors().gradientBlue,
+        borderRadius: BorderRadius.circular(25),
+      ),
+      child: ElevatedButton(
+        onPressed: () {},
+        style: ElevatedButton.styleFrom(
+          backgroundColor: Colors.transparent,
+          shadowColor: Colors.transparent,
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(10),
+          ),
+        ),
+        child: const Text(
+          'Request',
+          style: TextStyle(
+            color: Colors.white,
+            fontSize: 12,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
       ),
     );
   }

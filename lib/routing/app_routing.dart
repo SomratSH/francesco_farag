@@ -5,7 +5,14 @@ import 'package:francesco_farag/ui/agent/messge/chat_page.dart';
 import 'package:francesco_farag/ui/agent/messge/message_page.dart';
 import 'package:francesco_farag/ui/agent/profile/edit_profile_page.dart';
 import 'package:francesco_farag/ui/agent/profile/profile_page.dart';
+import 'package:francesco_farag/ui/agent/rentals/booking_details.dart';
 import 'package:francesco_farag/ui/agent/rentals/booking_page.dart';
+import 'package:francesco_farag/ui/agent/rentals/checkin/stepfive_checkin.dart';
+import 'package:francesco_farag/ui/agent/rentals/checkin/stepfour_checkin.dart';
+import 'package:francesco_farag/ui/agent/rentals/checkin/stepone_checkin.dart';
+import 'package:francesco_farag/ui/agent/rentals/checkin/stepsix_checkin.dart';
+import 'package:francesco_farag/ui/agent/rentals/checkin/stepthree_checkin.dart';
+import 'package:francesco_farag/ui/agent/rentals/checkin/steptwo_checkin.dart';
 import 'package:francesco_farag/ui/agent/rentals/checkin_progress_page.dart';
 import 'package:francesco_farag/ui/agent/rentals/checkinout_page.dart';
 import 'package:francesco_farag/ui/agent/rentals/checkout_progess_page.dart';
@@ -150,6 +157,41 @@ class AppRouting {
         builder: (context, state) => const CheckoutProgessPage(),
       ),
 
+      GoRoute(
+        path: AppRoute.checkinFirstStep,
+        name: 'checkin-first-step',
+        builder: (context, state) => const SteponeCheckin(),
+      ),
+      GoRoute(
+        path: AppRoute.checkinSecondStep,
+        name: 'checkin-two-step',
+        builder: (context, state) => const SteptwoCheckin(),
+      ),
+      GoRoute(
+        path: AppRoute.checkingThreeStep,
+        name: 'checkin-three-step',
+        builder: (context, state) => const StepthreeCheckin(),
+      ),
+      GoRoute(
+        path: AppRoute.checkinFourStep,
+        name: 'checkin-four-step',
+        builder: (context, state) => const StepfourCheckin(),
+      ),
+      GoRoute(
+        path: AppRoute.checkinFiveStep,
+        name: 'checkin-five-step',
+        builder: (context, state) => const StepfiveCheckin(),
+      ),
+      GoRoute(
+        path: AppRoute.checkinSixStep,
+        name: 'checkin-six-step',
+        builder: (context, state) => const StepsixCheckin(),
+      ),
+      GoRoute(
+        path: AppRoute.bookingDetails,
+        name: 'booking-details',
+        builder: (context, state) => const BookingDetailsScreen(),
+      ),
       //customer shell
       ShellRoute(
         builder: (context, state, child) => LandingCustomer(child: child),

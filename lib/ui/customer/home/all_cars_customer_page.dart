@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/svg.dart';
 import 'package:francesco_farag/routing/app_route.dart';
+import 'package:francesco_farag/utils/app_colors.dart';
 import 'package:go_router/go_router.dart';
 
 class AllCarsCustomerPage extends StatefulWidget {
@@ -86,11 +88,15 @@ class _AllCarsCustomerPageState extends State<AllCarsCustomerPage> {
                 return InkWell(
                   onTap: () => context.push(AppRoute.carDetails),
                   child: const CarListItem(
+                    seats: "4",
+                    door: "4",
+                    engineType: "Eelectric",
+                    gear: "Automatic",
                     name: 'Tesla Model 3',
                     type: 'Economy',
                     price: '89',
                     rating: '4.8',
-                    specs: '5 seats • Automatic',
+
                     imageUrl:
                         'https://images.unsplash.com/photo-1560958089-b8a1929cea89?q=80&w=2071&auto=format&fit=crop',
                   ),
@@ -105,7 +111,15 @@ class _AllCarsCustomerPageState extends State<AllCarsCustomerPage> {
 }
 
 class CarListItem extends StatelessWidget {
-  final String name, type, price, rating, specs, imageUrl;
+  final String name,
+      type,
+      price,
+      rating,
+      seats,
+      imageUrl,
+      door,
+      gear,
+      engineType;
 
   const CarListItem({
     super.key,
@@ -113,8 +127,11 @@ class CarListItem extends StatelessWidget {
     required this.type,
     required this.price,
     required this.rating,
-    required this.specs,
+    required this.seats,
     required this.imageUrl,
+    required this.door,
+    required this.engineType,
+    required this.gear,
   });
 
   @override
@@ -136,47 +153,14 @@ class CarListItem extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // Car Image & Badge
-          Stack(
-            children: [
-              ClipRRect(
-                borderRadius: const BorderRadius.vertical(
-                  top: Radius.circular(16),
-                ),
-                child: Image.network(
-                  imageUrl,
-                  height: 180,
-                  width: double.infinity,
-                  fit: BoxFit.cover,
-                ),
-              ),
-              Positioned(
-                top: 12,
-                right: 12,
-                child: Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 8,
-                    vertical: 4,
-                  ),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.9),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Row(
-                    children: [
-                      const Icon(Icons.star, color: Colors.orange, size: 14),
-                      const SizedBox(width: 4),
-                      Text(
-                        rating,
-                        style: const TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 12,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ],
+          ClipRRect(
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+            child: Image.network(
+              imageUrl,
+              height: 180,
+              width: double.infinity,
+              fit: BoxFit.cover,
+            ),
           ),
 
           // Car Details
@@ -215,29 +199,50 @@ class CarListItem extends StatelessWidget {
                     ),
                   ],
                 ),
+                Row(
+                  children: [
+                    SvgPicture.asset("assets/icons/star.svg"),
+                    SizedBox(width: 5),
+                    Text(
+                      "4.8",
+                      style: TextStyle(color: Color(0xff6B7280), fontSize: 16),
+                    ),
+                  ],
+                ),
+                SizedBox(height: 10),
+                _buildFeatureRow(
+                  Icons.group,
+                  "$seats Seats",
+                  "assets/icons/mdi_car-door.svg",
+                  "$door Door",
+                ),
+                const SizedBox(height: 8),
+                _buildFeatureRow(
+                  null,
+                  gear,
+                  "assets/icons/bi_fuel-pump-diesel.svg",
+                  engineType,
+                  svgLeft: "assets/icons/gear_type.svg",
+                ),
 
                 const SizedBox(height: 16),
                 Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  mainAxisAlignment: MainAxisAlignment.start,
                   children: [
-                    Text(
-                      specs,
-                      style: const TextStyle(color: Colors.grey, fontSize: 12),
-                    ),
                     RichText(
                       text: TextSpan(
                         children: [
                           TextSpan(
-                            text: '\$$price',
+                            text: '\$$price/',
                             style: const TextStyle(
                               color: Colors.black,
                               fontWeight: FontWeight.bold,
-                              fontSize: 18,
+                              fontSize: 22,
                             ),
                           ),
                           const TextSpan(
-                            text: '/day',
-                            style: TextStyle(color: Colors.grey, fontSize: 12),
+                            text: 'day',
+                            style: TextStyle(color: Colors.grey, fontSize: 16),
                           ),
                         ],
                       ),
@@ -250,24 +255,20 @@ class CarListItem extends StatelessWidget {
                 Container(
                   width: double.infinity,
                   decoration: BoxDecoration(
-                    gradient: const LinearGradient(
-                      colors: [Color(0xFF64B5F6), Color(0xFF3949AB)],
-                    ),
-                    borderRadius: BorderRadius.circular(18),
+                    gradient: AppColors().gradientBlue,
+
+                    borderRadius: BorderRadius.circular(25),
                   ),
-                  child: ElevatedButton(
-                    onPressed: () {},
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.transparent,
-                      shadowColor: Colors.transparent,
-                      padding: EdgeInsets.zero,
-                    ),
-                    child: const Text(
-                      'Request',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 13,
+                  child: Padding(
+                    padding: const EdgeInsets.all(12.0),
+                    child: Center(
+                      child: const Text(
+                        'Request',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 13,
+                        ),
                       ),
                     ),
                   ),
@@ -277,6 +278,42 @@ class CarListItem extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildFeatureRow(
+    IconData? iconLeft,
+    String labelLeft,
+    String svgRight,
+    String labelRight, {
+    String? svgLeft,
+  }) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        _buildIconText(iconLeft, labelLeft, svgLeft),
+        _buildIconText(null, labelRight, svgRight),
+      ],
+    );
+  }
+
+  Widget _buildIconText(IconData? icon, String label, String? svgPath) {
+    return Row(
+      children: [
+        svgPath != null
+            ? SvgPicture.asset(
+                svgPath,
+                width: 16,
+                height: 16,
+                colorFilter: const ColorFilter.mode(
+                  Colors.grey,
+                  BlendMode.srcIn,
+                ),
+              )
+            : Icon(icon, size: 16, color: Colors.grey),
+        const SizedBox(width: 4),
+        Text(label, style: const TextStyle(fontSize: 12, color: Colors.grey)),
+      ],
     );
   }
 }

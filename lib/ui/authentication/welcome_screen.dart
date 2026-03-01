@@ -17,10 +17,12 @@ class WelcomeScreen extends StatelessWidget {
             20.0,
           ), // Increased padding for better look
           child: Column(
-            mainAxisAlignment:
-                MainAxisAlignment.center, // This centers vertically
-            crossAxisAlignment: CrossAxisAlignment.center,
+            // mainAxisAlignment:
+            //     MainAxisAlignment.center, // This centers vertically
+            // crossAxisAlignment: CrossAxisAlignment.center,
             children: [
+              SizedBox(height: 50), // Add some space at the top
+              Image.asset("assets/image/splash_image.png", height: 200),
               const Text(
                 "Welcome to DriveNow",
                 textAlign: TextAlign.center,
