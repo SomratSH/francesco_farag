@@ -148,7 +148,9 @@ class _CustomerLoginState extends State<CustomerLogin> {
                     style: TextStyle(fontSize: 12),
                   ),
                   GestureDetector(
-                    onTap: () {},
+                    onTap: () {
+                      context.push(AppRoute.signupCustomer);
+                    },
                     child: const Text(
                       "Signup",
                       style: TextStyle(

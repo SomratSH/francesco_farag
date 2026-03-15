@@ -56,4 +56,5 @@ class AppRoute {
   static String checkinSixStep = "/checkin-step-six";
 
   static String bookingDetails = "/booking-details";
+  static String customerSignUp = "/customer-signup";
 }
