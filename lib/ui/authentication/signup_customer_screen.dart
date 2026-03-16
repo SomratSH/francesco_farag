@@ -1,7 +1,12 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:francesco_farag/constant/app_urls.dart';
+import 'package:francesco_farag/routing/app_route.dart';
+import 'package:francesco_farag/ui/customer/auth_provider.dart';
 import 'package:francesco_farag/ui/customer/customer_provider.dart';
+import 'package:francesco_farag/utils/custom_loading_dialog.dart';
+import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart'; // Add this
 import 'package:provider/provider.dart'; // Add this
 // import 'signup_provider.dart';
@@ -16,11 +21,18 @@ class SignupCustomerScreen extends StatefulWidget {
 class _SignupCustomerScreenState extends State<SignupCustomerScreen> {
   bool _obscurePassword = true;
   bool _obscureConfirmPassword = true;
+  TextEditingController nameController = TextEditingController();
+  TextEditingController passwordController = TextEditingController();
+  TextEditingController confirmPasswordController = TextEditingController();
+  TextEditingController emailController = TextEditingController();
+  TextEditingController licenseController = TextEditingController();
+  TextEditingController expiryDateController = TextEditingController();
+  TextEditingController passportController = TextEditingController();
 
   @override
   Widget build(BuildContext context) {
     // Access the provider
-    final provider = context.watch<CustomerProvider>();
+    final provider = context.watch<AuthProvider>();
 
     return Scaffold(
       backgroundColor: Colors.white,
@@ -91,36 +103,42 @@ class _SignupCustomerScreenState extends State<SignupCustomerScreen> {
 
               _buildFieldLabel("Name"),
               _buildTextField(
+                controller: nameController,
                 hintText: "Enter your name",
                 prefixIcon: Icons.person_outline,
               ),
 
               _buildFieldLabel("Email"),
               _buildTextField(
+                controller: emailController,
                 hintText: "j@email.com",
                 prefixIcon: Icons.email_outlined,
               ),
 
               _buildFieldLabel("License Number"),
               _buildTextField(
+                controller: licenseController,
                 hintText: "Enter your license number",
                 prefixIcon: Icons.badge_outlined,
               ),
 
               _buildFieldLabel("License Expiry"),
               _buildTextField(
-                hintText: "Enter your license expiry date",
+                controller: expiryDateController,
+                hintText: "(2028-10-25)Enter your license expiry date",
                 prefixIcon: Icons.calendar_today_outlined,
               ),
 
               _buildFieldLabel("ID/Passport Number"),
               _buildTextField(
+                controller: passportController,
                 hintText: "Enter your ID/Passport number",
                 prefixIcon: Icons.description_outlined,
               ),
 
               _buildFieldLabel("Password"),
               _buildTextField(
+                controller: passwordController,
                 hintText: "Enter your password",
                 prefixIcon: Icons.lock_outline,
                 isPassword: true,
@@ -131,7 +149,8 @@ class _SignupCustomerScreenState extends State<SignupCustomerScreen> {
 
               _buildFieldLabel("Confirm Password"),
               _buildTextField(
-                hintText: "Enter your password",
+                controller: confirmPasswordController,
+                hintText: "Enter your confirm password",
                 prefixIcon: Icons.lock_outline,
                 isPassword: true,
                 obscureText: _obscureConfirmPassword,
@@ -152,7 +171,24 @@ class _SignupCustomerScreenState extends State<SignupCustomerScreen> {
                   borderRadius: BorderRadius.circular(30),
                 ),
                 child: ElevatedButton(
-                  onPressed: () {},
+                  onPressed: () async {
+                    CustomLoading.show(context);
+                    final response = await provider.signUpUser(
+                      fullName: nameController.text,
+                      email: emailController.text,
+                      password: passwordController.text,
+                      licenseNumber: licenseController.text,
+                      experiyDate: expiryDateController.text,
+                      passportNumber: passwordController.text,
+                      context: context,
+                    );
+                    if (response) {
+                      CustomLoading.hide(context);
+                      context.push(AppUrls.loginAgent);
+                    } else {
+                      CustomLoading.hide(context);
+                    }
+                  },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.transparent,
                     shadowColor: Colors.transparent,
@@ -195,7 +231,9 @@ class _SignupCustomerScreenState extends State<SignupCustomerScreen> {
                     style: TextStyle(fontSize: 12, color: Colors.grey),
                   ),
                   GestureDetector(
-                    onTap: () {},
+                    onTap: () async {
+                      context.push(AppRoute.customerLogin);
+                    },
                     child: const Text(
                       "Login",
                       style: TextStyle(
@@ -229,7 +267,7 @@ class _SignupCustomerScreenState extends State<SignupCustomerScreen> {
               leading: const Icon(Icons.photo_library),
               title: const Text('Photo Gallery'),
               onTap: () {
-                context.read<CustomerProvider>().pickLicenseImage(
+                context.read<AuthProvider>().pickLicenseImage(
                   ImageSource.gallery,
                 );
                 Navigator.pop(resContext);
@@ -239,7 +277,7 @@ class _SignupCustomerScreenState extends State<SignupCustomerScreen> {
               leading: const Icon(Icons.camera_alt),
               title: const Text('Camera'),
               onTap: () {
-                context.read<CustomerProvider>().pickLicenseImage(
+                context.read<AuthProvider>().pickLicenseImage(
                   ImageSource.camera,
                 );
                 Navigator.pop(resContext);
@@ -270,8 +308,10 @@ class _SignupCustomerScreenState extends State<SignupCustomerScreen> {
     bool isPassword = false,
     bool obscureText = false,
     VoidCallback? onSuffixTap,
+    TextEditingController? controller,
   }) {
     return TextField(
+      controller: controller,
       obscureText: obscureText,
       decoration: InputDecoration(
         hintText: hintText,

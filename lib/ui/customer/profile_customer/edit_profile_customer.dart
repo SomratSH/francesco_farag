@@ -1,8 +1,6 @@
 
 import 'package:flutter/material.dart';
 
-
-
 class EditProfileCustomer extends StatelessWidget {
   const EditProfileCustomer({super.key});
 

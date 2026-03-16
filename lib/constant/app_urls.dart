@@ -1,10 +1,10 @@
 class AppUrls {
-  static String baseUrl = "https://api.scan2home.co.uk/api/v1";
-  static String imageUrl = "https://api.scan2home.co.uk";
+  static String baseUrl = "https://francesco-api.selimreza.dev/api/v1";
+  static String imageUrl = "https://francesco-api.selimreza.dev";
   //authetication
-  static String login = "/user/auth/login/";
+  static String login = "/auth/login/";
   static String loginAgent = "/agent/auth/login/";
-  static String signUp = "/user/auth/register/";
+  static String signUp = "/auth/signup/";
   static String signUpAgent = "/agent/auth/register/";
   static String authDetails = "/auth/users/me/";
 
@@ -42,7 +42,6 @@ class AppUrls {
   static String giveRating = "/user/properties/agent/";
   static String searchFilter = "/user/properties/";
   static String favourite = "/user/properties/favourites/";
-
 
   //agent portion
   static String agentDashboard = "/agent/properties/dashboard/";

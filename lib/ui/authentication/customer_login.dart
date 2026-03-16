@@ -1,8 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:francesco_farag/routing/app_route.dart';
+import 'package:francesco_farag/ui/customer/auth_provider.dart';
+import 'package:francesco_farag/ui/customer/customer_provider.dart';
 import 'package:francesco_farag/utils/app_colors.dart';
+import 'package:francesco_farag/utils/custom_loading_dialog.dart';
+import 'package:francesco_farag/utils/custom_snackbar.dart';
 import 'package:go_router/go_router.dart';
+import 'package:provider/provider.dart';
 
 class CustomerLogin extends StatefulWidget {
   const CustomerLogin({super.key});
@@ -12,10 +17,13 @@ class CustomerLogin extends StatefulWidget {
 }
 
 class _CustomerLoginState extends State<CustomerLogin> {
+  TextEditingController emailController = TextEditingController();
+  TextEditingController passwordController = TextEditingController();
   bool _obscureText = true;
 
   @override
   Widget build(BuildContext context) {
+    final provider = context.watch<AuthProvider>();
     return Scaffold(
       backgroundColor: Colors.white,
       body: SafeArea(
@@ -47,6 +55,7 @@ class _CustomerLoginState extends State<CustomerLogin> {
               ),
               const SizedBox(height: 8),
               _buildTextField(
+                controller: emailController,
                 hintText: "j@email.com",
                 prefixIcon: Icons.email_outlined,
               ),
@@ -63,6 +72,7 @@ class _CustomerLoginState extends State<CustomerLogin> {
               ),
               const SizedBox(height: 8),
               _buildTextField(
+                controller: passwordController,
                 hintText: "Enter your password",
                 prefixIcon: Icons.lock_outline,
                 isPassword: true,
@@ -83,10 +93,32 @@ class _CustomerLoginState extends State<CustomerLogin> {
                   ),
                 ),
               ),
-
               const SizedBox(height: 24),
               InkWell(
-                onTap: () => context.go(AppRoute.homeCustomer),
+                onTap: () async {
+                  CustomLoading.show(context);
+                  final response = await provider.login(
+                    email: emailController.text,
+                    password: passwordController.text,
+                    context: context,
+                  );
+                  if (response) {
+                    CustomLoading.hide(context);
+                    if (context.mounted) {
+                      context.go(AppRoute.homeCustomer);
+                    }
+                  } else {
+                    CustomLoading.hide(context);
+                    if (context.mounted) {
+                      AppSnackbar.show(
+                        context,
+                        title: "Customer",
+                        message: "Password wrong or accout doesn't!",
+                        type: SnackType.error,
+                      );
+                    }
+                  }
+                },
                 child: DecoratedBox(
                   decoration: BoxDecoration(
                     gradient: AppColors().gradientPink,
@@ -175,8 +207,10 @@ class _CustomerLoginState extends State<CustomerLogin> {
     bool isPassword = false,
     bool obscureText = false,
     VoidCallback? onSuffixTap,
+    TextEditingController? controller,
   }) {
     return TextField(
+      controller: controller,
       obscureText: obscureText,
       decoration: InputDecoration(
         hintText: hintText,

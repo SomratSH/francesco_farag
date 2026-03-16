@@ -1,14 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:francesco_farag/routing/app_route.dart';
+import 'package:francesco_farag/ui/customer/customer_provider.dart';
 import 'package:francesco_farag/utils/app_colors.dart';
 import 'package:go_router/go_router.dart';
+import 'package:provider/provider.dart';
 
 class HomeCustomer extends StatelessWidget {
   const HomeCustomer({super.key});
 
   @override
   Widget build(BuildContext context) {
+    final provider = context.watch<CustomerProvider>();
     return Scaffold(
       backgroundColor: Colors.white,
       body: SingleChildScrollView(
@@ -202,34 +205,30 @@ class HomeCustomer extends StatelessWidget {
                 ],
               ),
             ),
-            SizedBox(
-              height: 280,
-              child: ListView(
-                scrollDirection: Axis.horizontal,
-                padding: const EdgeInsets.only(left: 24),
-                children: const [
-                  CarCard(
-                    name: 'Tesla Model 3',
-                    type: 'Economy',
-                    price: '89',
-                    seats: '5',
-
-                    gear: 'Automatic',
-                    door: 4,
-                    engineType: "Diesel",
+            provider.isLoading
+                ? CircularProgressIndicator()
+                : provider.carsModel.results!.isEmpty
+                ? Text("No Cars")
+                : SizedBox(
+                    height: 280,
+                    child: ListView(
+                      scrollDirection: Axis.horizontal,
+                      padding: const EdgeInsets.only(left: 24),
+                      children: List.generate(
+                        provider.carsModel.results!.length,
+                        (index) => CarCard(
+                          name: provider.carsModel.results![index].carName
+                              .toString(),
+                          type: provider.carsModel.results![index].category!,
+                          price: '89',
+                          seats: '5',
+                          gear: 'Automatic',
+                          door: 4,
+                          engineType: "Diesel",
+                        ),
+                      ),
+                    ),
                   ),
-                  CarCard(
-                    name: 'BMW 5 Series',
-                    type: 'Luxury',
-                    price: '129',
-                    seats: '5',
-                    gear: 'Automatic',
-                    door: 4,
-                    engineType: "Diesel",
-                  ),
-                ],
-              ),
-            ),
             const SizedBox(height: 20),
           ],
         ),
@@ -450,13 +449,22 @@ class CarCard extends StatelessWidget {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text(
-                      name,
-                      style: const TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 16,
+                    // Wrap the text in Expanded to take only available space
+                    Expanded(
+                      child: Text(
+                        name,
+                        overflow: TextOverflow
+                            .ellipsis, // This will now work correctly
+                        maxLines: 1, // Optional: keeps it to a single line
+                        style: const TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 16,
+                        ),
                       ),
                     ),
+                    const SizedBox(
+                      width: 8,
+                    ), // Add a little gap so text doesn't touch the tag
                     _buildTypeTag(type),
                   ],
                 ),

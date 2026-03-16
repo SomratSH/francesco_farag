@@ -1,3 +1,5 @@
+import 'package:francesco_farag/data/customer_imp.dart';
+import 'package:francesco_farag/ui/customer/auth_provider.dart';
 import 'package:francesco_farag/ui/customer/customer_provider.dart';
 import 'package:get_it/get_it.dart';
 import 'package:provider/provider.dart';
@@ -7,6 +9,11 @@ final getIt = GetIt.instance;
 
 class AppProvider {
   static List<SingleChildWidget> get provider => [
-    ChangeNotifierProvider(create: (_) => CustomerProvider(getIt())),
+    ChangeNotifierProvider(create: (_) => AuthProvider(CustomerImp())),
+    ChangeNotifierProvider(
+      create: (_) => CustomerProvider()
+        ..getFeatureCar()
+        ..fetchCustomerProfile(),
+    ),
   ];
 }

@@ -1,13 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:francesco_farag/routing/app_route.dart';
+import 'package:francesco_farag/ui/customer/customer_provider.dart';
 import 'package:francesco_farag/utils/app_colors.dart';
 import 'package:go_router/go_router.dart';
+import 'package:provider/provider.dart';
 
 class ProfileCustomer extends StatelessWidget {
   const ProfileCustomer({super.key});
 
   @override
   Widget build(BuildContext context) {
+    // 1. Listen to the provider
+    final provider = context.watch<CustomerProvider>();
+
     return Scaffold(
       backgroundColor: Colors.white,
       body: SingleChildScrollView(
@@ -19,34 +24,36 @@ class ProfileCustomer extends StatelessWidget {
               padding: const EdgeInsets.only(top: 60, bottom: 40),
               decoration: BoxDecoration(
                 gradient: AppColors().gradientPink,
-                borderRadius: BorderRadius.only(
+                borderRadius: const BorderRadius.only(
                   bottomLeft: Radius.circular(30),
                   bottomRight: Radius.circular(30),
                 ),
               ),
               child: Column(
                 children: [
-                  const CircleAvatar(
+                  CircleAvatar(
                     radius: 50,
                     backgroundColor: Colors.white,
                     child: CircleAvatar(
                       radius: 47,
                       backgroundImage: NetworkImage(
-                        'https://i.pravatar.cc/150?u=john',
+                        provider.userProfile!.profile!.profilePhotoUrl ??
+                            'https://i.pravatar.cc/150?u=placeholder',
                       ),
                     ),
                   ),
                   const SizedBox(height: 12),
-                  const Text(
-                    'John Smith',
-                    style: TextStyle(
+                  Text(
+                    provider.userProfile!.profile!.fullName ??
+                        'Unknown User', // Dynamic Name
+                    style: const TextStyle(
                       color: Colors.white,
                       fontSize: 22,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
                   Text(
-                    'john@example.com',
+                    provider.userProfile!.profile!.email ?? '', // Dynamic Email
                     style: TextStyle(
                       color: Colors.white.withOpacity(0.8),
                       fontSize: 14,
@@ -61,51 +68,56 @@ class ProfileCustomer extends StatelessWidget {
               child: Column(
                 children: [
                   // --- Personal Information Section ---
-                  const SectionCard(
+                  SectionCard(
                     title: 'Personal Information',
                     showEdit: true,
                     children: [
                       InfoTile(
                         icon: Icons.person_outline,
                         label: 'Full Name',
-                        value: 'Sahrah Johnson',
+                        value: provider.userProfile!.profile!.fullName ?? 'N/A',
                       ),
                       InfoTile(
                         icon: Icons.mail_outline,
                         label: 'Email',
-                        value: 'sarah@eurocar.com',
+                        value: provider.userProfile!.profile!.email ?? 'N/A',
                       ),
                       InfoTile(
                         icon: Icons.phone_outlined,
                         label: 'Phone',
-                        value: '+1234567890',
+                        value: provider.userProfile!.profile!.phone ?? 'N/A',
                       ),
                     ],
                   ),
 
                   // --- Agency Information ---
-                  const SectionCard(
-                    title: 'Agency Information',
+                  SectionCard(
+                    title:
+                        'Status Information', // Changed title to reflect verification
                     children: [
                       ListTile(
                         contentPadding: EdgeInsets.zero,
-                        leading: CircleAvatar(
+                        leading: const CircleAvatar(
                           backgroundColor: Color(0xFFECEFF1),
-                          child: Text('🚗', style: TextStyle(fontSize: 20)),
+                          child: Text('✅', style: TextStyle(fontSize: 20)),
                         ),
                         title: Text(
-                          'EuroCar Rentals',
-                          style: TextStyle(fontWeight: FontWeight.bold),
+                          provider.userProfile!.profile!.licenseStatus
+                                  ?.toUpperCase() ??
+                              'PENDING',
+                          style: const TextStyle(fontWeight: FontWeight.bold),
                         ),
                         subtitle: Text(
-                          'Verified Partner',
-                          style: TextStyle(color: Colors.grey),
+                          provider.userProfile!.profile!.licenseVerified == true
+                              ? 'Verified Partner'
+                              : 'Unverified Account',
+                          style: const TextStyle(color: Colors.grey),
                         ),
                       ),
                     ],
                   ),
 
-                  // --- Quick Actions ---
+                  // ... Rest of your Quick Actions and Support cards ...
                   const SectionCard(
                     title: 'Quick Actions',
                     children: [
@@ -119,21 +131,6 @@ class ProfileCustomer extends StatelessWidget {
                         color: Colors.orange,
                         label: 'Customer Messages',
                       ),
-                      ActionTile(
-                        icon: Icons.assignment_turned_in_outlined,
-                        color: Colors.blueGrey,
-                        label: 'Booking Status',
-                      ),
-                    ],
-                  ),
-
-                  // --- Terms & Support ---
-                  const SectionCard(
-                    children: [
-                      TextLink(label: 'Terms & Conditions'),
-                      TextLink(label: 'Privacy Policy'),
-                      TextLink(label: 'Help & Support'),
-                      TextLink(label: 'About Us'),
                     ],
                   ),
 
@@ -150,9 +147,7 @@ class ProfileCustomer extends StatelessWidget {
                       borderRadius: BorderRadius.circular(30),
                     ),
                     child: TextButton.icon(
-                      onPressed: () {
-                        context.go(AppRoute.welcome);
-                      },
+                      onPressed: () => context.go(AppRoute.welcome),
                       icon: const Icon(Icons.logout, color: Colors.white),
                       label: const Text(
                         'Logout',
@@ -173,8 +168,6 @@ class ProfileCustomer extends StatelessWidget {
     );
   }
 }
-
-// --- Helper Widgets ---
 
 class SectionCard extends StatelessWidget {
   final String? title;
