@@ -1,4 +1,5 @@
 import 'package:francesco_farag/data/customer_imp.dart';
+import 'package:francesco_farag/ui/agent/agent_provider.dart';
 import 'package:francesco_farag/ui/customer/auth_provider.dart';
 import 'package:francesco_farag/ui/customer/customer_provider.dart';
 import 'package:get_it/get_it.dart';
@@ -16,5 +17,6 @@ class AppProvider {
         ..fetchRentalList()
         ..fetchCustomerProfile(),
     ),
+    ChangeNotifierProvider(create: (_) => AgentProvider()..fetchDashboard()),
   ];
 }

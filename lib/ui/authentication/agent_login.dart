@@ -2,8 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:francesco_farag/routing/app_route.dart';
 import 'package:francesco_farag/ui/agent/home/home_page.dart';
+import 'package:francesco_farag/ui/customer/auth_provider.dart';
 import 'package:francesco_farag/utils/app_colors.dart';
+import 'package:francesco_farag/utils/custom_loading_dialog.dart';
+import 'package:francesco_farag/utils/custom_snackbar.dart';
 import 'package:go_router/go_router.dart';
+import 'package:provider/provider.dart';
 
 class AgentLogin extends StatefulWidget {
   const AgentLogin({super.key});
@@ -15,8 +19,12 @@ class AgentLogin extends StatefulWidget {
 class _AgentLoginState extends State<AgentLogin> {
   bool _obscureText = true;
 
+  TextEditingController emailController = TextEditingController();
+  TextEditingController passwordController = TextEditingController();
+
   @override
   Widget build(BuildContext context) {
+    final provider = context.watch<AuthProvider>();
     return Scaffold(
       backgroundColor: Colors.white,
       body: SafeArea(
@@ -48,6 +56,7 @@ class _AgentLoginState extends State<AgentLogin> {
               ),
               const SizedBox(height: 8),
               _buildTextField(
+                controller: emailController,
                 hintText: "j@email.com",
                 prefixIcon: Icons.email_outlined,
               ),
@@ -64,6 +73,7 @@ class _AgentLoginState extends State<AgentLogin> {
               ),
               const SizedBox(height: 8),
               _buildTextField(
+                controller: passwordController,
                 hintText: "Enter your password",
                 prefixIcon: Icons.lock_outline,
                 isPassword: true,
@@ -87,10 +97,31 @@ class _AgentLoginState extends State<AgentLogin> {
 
               const SizedBox(height: 24),
               InkWell(
-                onTap: (){
-                  context.go(AppRoute.home);
+                onTap: () async {
+                  CustomLoading.show(context);
+                  final response = await provider.login(
+                    email: emailController.text,
+                    password: passwordController.text,
+                    context: context,
+                  );
+                  if (response) {
+                    CustomLoading.hide(context);
+                    if (context.mounted) {
+                      context.go(AppRoute.home);
+                    }
+                  } else {
+                    CustomLoading.hide(context);
+                    if (context.mounted) {
+                      AppSnackbar.show(
+                        context,
+                        title: "Agency Agent",
+                        message: "Password wrong or accout doesn't!",
+                        type: SnackType.error,
+                      );
+                    }
+                  }
                 },
-                
+
                 child: DecoratedBox(
                   decoration: BoxDecoration(
                     gradient: AppColors().gradientBlue,
@@ -177,8 +208,11 @@ class _AgentLoginState extends State<AgentLogin> {
     bool isPassword = false,
     bool obscureText = false,
     VoidCallback? onSuffixTap,
+
+    TextEditingController? controller,
   }) {
     return TextField(
+      controller: controller,
       obscureText: obscureText,
       decoration: InputDecoration(
         hintText: hintText,

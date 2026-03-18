@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:francesco_farag/routing/app_route.dart';
+import 'package:francesco_farag/ui/agent/agent_provider.dart';
 import 'package:francesco_farag/ui/agent/home/widget/stats_card.dart';
 import 'package:francesco_farag/utils/app_colors.dart';
 import 'package:go_router/go_router.dart';
+import 'package:provider/provider.dart';
 // Import the file created above
 
 class AgentDashboardScreen extends StatelessWidget {
@@ -10,6 +12,7 @@ class AgentDashboardScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final provider = context.watch<AgentProvider>();
     return Scaffold(
       backgroundColor: const Color(0xFFF8F9FA),
       body: SingleChildScrollView(
@@ -51,91 +54,102 @@ class AgentDashboardScreen extends StatelessWidget {
               ),
             ),
 
-            Padding(
-              padding: const EdgeInsets.all(20.0),
-              child: Column(
-                children: [
-                  // Horizontal Stats
-                  const StatCard(
-                    icon: Icons.attach_money,
-                    title: "Today's Revenue",
-                    value: "\$4256",
-                    showTrend: true,
-                  ),
-                  const StatCard(
-                    icon: Icons.access_time,
-                    title: "Pending Bookings",
-                    value: "5",
-                  ),
-                  const StatCard(
-                    icon: Icons.check_circle_outline,
-                    title: "Today Active",
-                    value: "12",
-                  ),
+            provider.isLoading
+                ? Center(child: CircularProgressIndicator())
+                : Padding(
+                    padding: const EdgeInsets.all(20.0),
+                    child: Column(
+                      children: [
+                        // Horizontal Stats
+                        StatCard(
+                          icon: Icons.attach_money,
+                          title: "Today's Revenue",
+                          value:
+                              "${provider.agentDashboardModel.todaysRevenue}",
+                          showTrend: true,
+                        ),
+                        StatCard(
+                          icon: Icons.access_time,
+                          title: "Pending Bookings",
+                          value: provider.agentDashboardModel.pendingBookings!
+                              .toString(),
+                        ),
+                        StatCard(
+                          icon: Icons.check_circle_outline,
+                          title: "Today Active",
+                          value: provider.agentDashboardModel.todayActive!
+                              .toString(),
+                        ),
 
-                  const SizedBox(height: 24),
+                        const SizedBox(height: 24),
 
-                  // Section Header
-                  _buildSectionHeader("Today's Check-in", true),
-                  const CheckInTile(
-                    name: "John Smith",
-                    carModel: "BMW 3 Series",
-                    time: "10:00 AM",
-                    initial: "J",
-                  ),
-                  const CheckInTile(
-                    name: "Michael Brown",
-                    carModel: "Mercedes C-Class",
-                    time: "10:00 AM",
-                    initial: "M",
-                  ),
+                        // Section Header
+                        _buildSectionHeader("Today's Check-in", true),
+                        const CheckInTile(
+                          name: "John Smith",
+                          carModel: "BMW 3 Series",
+                          time: "10:00 AM",
+                          initial: "J",
+                        ),
+                        const CheckInTile(
+                          name: "Michael Brown",
+                          carModel: "Mercedes C-Class",
+                          time: "10:00 AM",
+                          initial: "M",
+                        ),
 
-                  const SizedBox(height: 12),
+                        const SizedBox(height: 12),
 
-                  Column(
-                    children: [
-                      _buildSectionHeader("Quick Access", false),
-                      GridView.count(
-                        shrinkWrap: true,
-                        physics: const NeverScrollableScrollPhysics(),
-                        crossAxisCount: 2,
-                        crossAxisSpacing: 12,
-                        mainAxisSpacing: 12,
-                        childAspectRatio: 1.1,
-                        children: [
-                          InkWell(
-                            onTap: () => context.push(AppRoute.bookingRequest),
-                            child: QuickAccessItem(
-                              title: "Booking\nStatus",
-                              icon: Icons.access_time,
-                              isPrimary: true,
+                        Column(
+                          children: [
+                            _buildSectionHeader("Quick Access", false),
+                            GridView.count(
+                              shrinkWrap: true,
+                              physics: const NeverScrollableScrollPhysics(),
+                              crossAxisCount: 2,
+                              crossAxisSpacing: 12,
+                              mainAxisSpacing: 12,
+                              childAspectRatio: 1.1,
+                              children: [
+                                InkWell(
+                                  onTap: () =>
+                                      context.push(AppRoute.bookingRequest),
+                                  child: QuickAccessItem(
+                                    title: "Booking\nStatus",
+                                    icon: Icons.access_time,
+                                    isPrimary: true,
+                                  ),
+                                ),
+                                InkWell(
+                                  onTap: () =>
+                                      context.push(AppRoute.checkinout),
+                                  child: QuickAccessItem(
+                                    title: "Check-in & Checkout",
+                                    icon: Icons.directions_car,
+                                    isPrimary: true,
+                                  ),
+                                ),
+                                InkWell(
+                                  onTap: () =>
+                                      context.push(AppRoute.createFine),
+                                  child: QuickAccessItem(
+                                    title: "Create Fine",
+                                    icon: Icons.receipt_long,
+                                    isPrimary: true,
+                                  ),
+                                ),
+                                QuickAccessItem(
+                                  title: "Customer Messages",
+                                  icon: Icons.chat_bubble_outline,
+                                  isPrimary: true,
+                                ),
+                              ],
                             ),
-                          ),
-                          InkWell(
-                            onTap: () => context.push(AppRoute.checkinout),
-                            child: QuickAccessItem(
-                              title: "Check-in & Checkout",
-                              icon: Icons.directions_car,
-                            ),
-                          ),
-                          InkWell(
-                            onTap: () => context.push(AppRoute.createFine),
-                            child: QuickAccessItem(
-                              title: "Create Fine",
-                              icon: Icons.receipt_long,
-                            ),
-                          ),
-                          QuickAccessItem(
-                            title: "Customer Messages",
-                            icon: Icons.chat_bubble_outline,
-                          ),
-                        ],
-                      ),
-                    ],
+                          ],
+                        ),
+                      ],
+                    ),
                   ),
-                ],
-              ),
-            ),
           ],
         ),
       ),

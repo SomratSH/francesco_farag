@@ -161,22 +161,22 @@ class HomeCustomer extends StatelessWidget {
                   _buildQuickAccessTile(
                     'Fines',
                     Icons.attach_money,
-                    Colors.blue,
-                    false,
+                    const Color(0xFFE91E63),
+                    true,
                   ),
                   _buildQuickAccessTile(
                     'Messages',
                     Icons.chat_bubble_outline,
-                    Colors.blue,
-                    false,
+                    const Color(0xFFE91E63),
+                    true,
                   ),
                   InkWell(
                     onTap: () => context.push(AppRoute.driverLiencse),
                     child: _buildQuickAccessTile(
                       'License',
                       Icons.assignment_ind_outlined,
-                      Colors.blue,
-                      false,
+                      const Color(0xFFE91E63),
+                      true,
                     ),
                   ),
                 ],
@@ -222,15 +222,13 @@ class HomeCustomer extends StatelessWidget {
                           onTap: () async {
                             final response = await provider.fetchCarDetails(
                               provider.carsModel.results![index].id!,
-                              context
+                              context,
                             );
                             if (response) {
                               if (context.mounted) {
                                 context.push(AppRoute.carDetails);
                               }
-                            } else {
-                             
-                            }
+                            } else {}
                           },
                           child: CarCard(
                             image:

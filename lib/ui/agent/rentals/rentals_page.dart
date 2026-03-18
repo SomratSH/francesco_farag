@@ -1,7 +1,11 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_svg/svg.dart';
 import 'package:francesco_farag/routing/app_route.dart';
+import 'package:francesco_farag/ui/agent/agent_provider.dart';
+import 'package:francesco_farag/ui/agent/model/rental_request_model.dart';
 import 'package:francesco_farag/utils/app_colors.dart';
+import 'package:francesco_farag/utils/custom_loading_dialog.dart';
+import 'package:francesco_farag/utils/custom_snackbar.dart';
+import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
 
 class RentalsPage extends StatefulWidget {
@@ -12,156 +16,111 @@ class RentalsPage extends StatefulWidget {
 }
 
 class _RentalsPageState extends State<RentalsPage> {
-  String isSelected = "Pending (2)";
+  String selectedStatus = "pending";
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      context.read<AgentProvider>().getRentalRequests();
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
+    final provider = context.watch<AgentProvider>();
+    final model = provider.rentalRequestsModel;
+
+    // Filter list based on selected tab
+    final filteredList =
+        model?.requests?.where((req) {
+          if (selectedStatus == "pending") {
+            return req.status == "pending" || req.status == "quotation_sent";
+          }
+          return req.status == selectedStatus;
+        }).toList() ??
+        [];
+
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
         backgroundColor: Colors.white,
         elevation: 0.5,
-
         title: const Text(
           'Rentals',
           style: TextStyle(color: Colors.black87, fontWeight: FontWeight.w600),
         ),
         centerTitle: true,
       ),
-      body: Column(
-        children: [
-          const SizedBox(height: 16),
-          // --- Tab / Filter Row ---
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      body: provider.isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : Column(
               children: [
-                InkWell(
-                  onTap: () => setState(() {
-                    isSelected = "Pending (2)";
-                  }),
-                  child: _buildTab(
-                    'Pending (2)',
-                    isSelected: isSelected == "Pending (2)" ? true : false,
+                const SizedBox(height: 16),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      _buildTab(
+                        'Pending (${model?.counts?.pending ?? 0})',
+                        isActive: selectedStatus == "pending",
+                        onTap: () => setState(() => selectedStatus = "pending"),
+                      ),
+                      _buildTab(
+                        'Active (${model?.counts?.active ?? 0})',
+                        isActive: selectedStatus == "active",
+                        onTap: () => setState(() => selectedStatus = "active"),
+                      ),
+                      _buildTab(
+                        'Rejected (${model?.counts?.rejected ?? 0})',
+                        isActive: selectedStatus == "rejected",
+                        onTap: () =>
+                            setState(() => selectedStatus = "rejected"),
+                      ),
+                    ],
                   ),
                 ),
-                InkWell(
-                  onTap: () => setState(() {
-                    isSelected = "Active (3)";
-                  }),
-                  child: _buildTab(
-                    'Active (3)',
-                    isSelected: isSelected == "Active (3)" ? true : false,
-                  ),
-                ),
-                InkWell(
-                  onTap: () => setState(() {
-                    isSelected = "Rejected (1)";
-                  }),
-                  child: _buildTab(
-                    'Rejected (1)',
-                    isSelected: isSelected == "Rejected (1)" ? true : false,
-                  ),
+                const SizedBox(height: 16),
+                Expanded(
+                  child: filteredList.isEmpty
+                      ? const Center(child: Text("No requests found"))
+                      : ListView.builder(
+                          padding: const EdgeInsets.symmetric(horizontal: 16),
+                          itemCount: filteredList.length,
+                          itemBuilder: (context, index) {
+                            final request = filteredList[index];
+                            return BookingCard(request: request);
+                          },
+                        ),
                 ),
               ],
             ),
-          ),
-          const SizedBox(height: 16),
-
-          // --- Booking List ---
-          isSelected == "Pending (2)"
-              ? Expanded(
-                  child: ListView(
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    children: const [
-                      BookingCard(
-                        name: 'John Smith',
-                        initial: 'J',
-                        carName: 'BMW 5 Series',
-                        status: "Pending",
-                        carImage:
-                            'https://images.unsplash.com/photo-1555215695-3004980ad54e?q=80&w=2070&auto=format&fit=crop',
-                      ),
-                      BookingCard(
-                        name: 'Den Smith',
-                        initial: 'D',
-                        status: "Pending",
-                        carName: 'BMW V7 Series',
-
-                        carImage:
-                            'https://images.unsplash.com/photo-1541899481282-d53bffe3c35d?q=80&w=2070&auto=format&fit=crop',
-                      ),
-                      BookingCard(
-                        name: 'Alice Cooper',
-                        initial: 'A',
-                        carName: 'Tesla Model 3',
-                        status: "Pending",
-                        carImage:
-                            'https://images.unsplash.com/photo-1560958089-b8a1929cea89?q=80&w=2071&auto=format&fit=crop',
-                      ),
-                    ],
-                  ),
-                )
-              : isSelected == "Active (3)"
-              ? Expanded(
-                  child: ListView(
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    children: const [
-                      BookingCard(
-                        name: 'Sarah Jenkins',
-                        initial: 'S',
-                        carName: 'Mercedes C-Class',
-                        status: "Active",
-                        carImage:
-                            'https://images.unsplash.com/photo-1618843479313-40f8afb4b4d8?q=80&w=2070&auto=format&fit=crop',
-                      ),
-                      BookingCard(
-                        name: 'Michael Ross',
-                        initial: 'M',
-                        carName: 'Audi A4',
-                        status: "Active",
-                        carImage:
-                            'https://images.unsplash.com/photo-1606664515524-ed2f786a0bd6?q=80&w=2070&auto=format&fit=crop',
-                      ),
-                    ],
-                  ),
-                )
-              : isSelected == "Rejected (1)"
-              ? Expanded(
-                  child: ListView(
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    children: const [
-                      BookingCard(
-                        name: 'Robert Fox',
-                        initial: 'R',
-                        carName: 'Range Rover Evoque',
-                        status: "Rejected",
-                        carImage:
-                            'https://images.unsplash.com/photo-1618843479313-40f8afb4b4d8?q=80&w=2070&auto=format&fit=crop',
-                      ),
-                    ],
-                  ),
-                )
-              : const SizedBox(),
-        ],
-      ),
     );
   }
 
-  Widget _buildTab(String label, {bool isSelected = false}) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-      decoration: BoxDecoration(
-        color: isSelected ? const Color(0xFF4A80F0) : Colors.white,
-        borderRadius: BorderRadius.circular(25),
-        border: isSelected ? null : Border.all(color: Colors.grey.shade200),
-        gradient: isSelected ? AppColors().gradientBlue : null,
-      ),
-      child: Text(
-        label,
-        style: TextStyle(
-          color: isSelected ? Colors.white : Colors.grey.shade600,
-          fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+  Widget _buildTab(
+    String label, {
+    required bool isActive,
+    required VoidCallback onTap,
+  }) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(25),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+        decoration: BoxDecoration(
+          color: isActive ? const Color(0xFF4A80F0) : Colors.white,
+          borderRadius: BorderRadius.circular(25),
+          border: isActive ? null : Border.all(color: Colors.grey.shade200),
+          gradient: isActive ? AppColors().gradientBlue : null,
+        ),
+        child: Text(
+          label,
+          style: TextStyle(
+            color: isActive ? Colors.white : Colors.grey.shade600,
+            fontWeight: isActive ? FontWeight.bold : FontWeight.normal,
+          ),
         ),
       ),
     );
@@ -169,23 +128,16 @@ class _RentalsPageState extends State<RentalsPage> {
 }
 
 class BookingCard extends StatelessWidget {
-  final String name;
-  final String initial;
-  final String carName;
-  final String carImage;
-  final String? status;
+  final RentalRequest request;
 
-  const BookingCard({
-    super.key,
-    required this.name,
-    this.status,
-    required this.initial,
-    required this.carName,
-    required this.carImage,
-  });
+  const BookingCard({super.key, required this.request});
 
   @override
   Widget build(BuildContext context) {
+    final provider = context.watch<AgentProvider>();
+    // Correctly reference the status from the request object
+    final String currentStatus = request.status ?? "";
+
     return Container(
       margin: const EdgeInsets.only(bottom: 20),
       decoration: BoxDecoration(
@@ -194,12 +146,11 @@ class BookingCard extends StatelessWidget {
       ),
       child: Column(
         children: [
-          // User Header
           Container(
             padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: const Color(0xFFE3F2FD),
-              borderRadius: const BorderRadius.only(
+            decoration: const BoxDecoration(
+              color: Color(0xFFE3F2FD),
+              borderRadius: BorderRadius.only(
                 topLeft: Radius.circular(15),
                 topRight: Radius.circular(15),
               ),
@@ -209,7 +160,9 @@ class BookingCard extends StatelessWidget {
                 CircleAvatar(
                   backgroundColor: const Color(0xFF81D4FA),
                   child: Text(
-                    initial,
+                    request.customer?.fullName?.isNotEmpty == true
+                        ? request.customer!.fullName![0].toUpperCase()
+                        : "?",
                     style: const TextStyle(color: Colors.white),
                   ),
                 ),
@@ -218,7 +171,7 @@ class BookingCard extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      name,
+                      request.customer?.fullName ?? "Unknown Customer",
                       style: const TextStyle(fontWeight: FontWeight.bold),
                     ),
                     const Text(
@@ -230,22 +183,24 @@ class BookingCard extends StatelessWidget {
               ],
             ),
           ),
-
-          // Car Image
           Padding(
             padding: const EdgeInsets.all(12.0),
             child: ClipRRect(
               borderRadius: BorderRadius.circular(12),
               child: Image.network(
-                carImage,
+                request.car?.featuredImageUrl ??
+                    'https://images.unsplash.com/photo-1606664515524-ed2f786a0bd6?q=80&w=2070&auto=format&fit=crop',
                 height: 150,
                 width: double.infinity,
                 fit: BoxFit.cover,
+                errorBuilder: (context, error, stackTrace) => Container(
+                  height: 150,
+                  color: Colors.grey.shade200,
+                  child: const Icon(Icons.directions_car, size: 50),
+                ),
               ),
             ),
           ),
-
-          // Details
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16),
             child: Column(
@@ -254,92 +209,26 @@ class BookingCard extends StatelessWidget {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text(
-                      carName,
-                      style: const TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 18,
+                    Expanded(
+                      child: Text(
+                        request.car?.carName ?? "Car Name",
+                        style: const TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 18,
+                        ),
+                        overflow: TextOverflow.ellipsis,
                       ),
                     ),
-                    status == "Pending"
-                        ? Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 12,
-                              vertical: 4,
-                            ),
-                            decoration: BoxDecoration(
-                              color: Colors.amber.shade50,
-                              borderRadius: BorderRadius.circular(20),
-                            ),
-                            child: const Text(
-                              'Pending',
-                              style: TextStyle(
-                                color: Colors.amber,
-                                fontWeight: FontWeight.bold,
-                                fontSize: 12,
-                              ),
-                            ),
-                          )
-                        : status == "Active"
-                        ? Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 12,
-                              vertical: 4,
-                            ),
-                            decoration: BoxDecoration(
-                              color: Color(0xffDCFCE7),
-                              borderRadius: BorderRadius.circular(20),
-                            ),
-                            child: Row(
-                              children: [
-                                SvgPicture.asset("assets/icons/approved.svg"),
-                                SizedBox(width: 5),
-                                const Text(
-                                  'Approved',
-                                  style: TextStyle(
-                                    color: Color(0xff008236),
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 12,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          )
-                        : status == "Rejected"
-                        ? Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 12,
-                              vertical: 4,
-                            ),
-                            decoration: BoxDecoration(
-                              color: Color(0xffFFE2E2),
-                              borderRadius: BorderRadius.circular(20),
-                            ),
-                            child: Row(
-                              children: [
-                                SvgPicture.asset("assets/icons/rejected.svg"),
-                                SizedBox(width: 5),
-                                const Text(
-                                  'Rejected',
-                                  style: TextStyle(
-                                    color: Colors.red,
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 12,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          )
-                        : SizedBox(),
+                    _buildStatusBadge(currentStatus),
                   ],
                 ),
                 const SizedBox(height: 8),
-                const Row(
+                Row(
                   children: [
-                    Icon(Icons.star, color: Colors.orange, size: 16),
+                    const Icon(Icons.star, color: Colors.orange, size: 16),
                     Text(
-                      ' 4.8',
-                      style: TextStyle(color: Colors.grey, fontSize: 14),
+                      ' ${request.car?.averageRating ?? 0.0}',
+                      style: const TextStyle(color: Colors.grey, fontSize: 14),
                     ),
                   ],
                 ),
@@ -347,18 +236,22 @@ class BookingCard extends StatelessWidget {
                 _buildInfoRow(
                   Icons.calendar_today_outlined,
                   'Pickup',
-                  '2026-02-15',
+                  request.pickupDateFormatted ?? "",
                 ),
-                _buildInfoRow(Icons.history_outlined, 'Return', '2026-02-18'),
+                _buildInfoRow(
+                  Icons.history_outlined,
+                  'Return',
+                  request.returnDateFormatted ?? "",
+                ),
                 const Divider(),
-                const Row(
+                Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Text(
-                      '5 seats - Automatic',
-                      style: TextStyle(color: Colors.grey, fontSize: 13),
+                      '${request.car?.seats ?? 0} seats - ${request.car?.transmission ?? ""}',
+                      style: const TextStyle(color: Colors.grey, fontSize: 13),
                     ),
-                    Row(
+                    const Row(
                       children: [
                         Icon(
                           Icons.location_on_outlined,
@@ -374,94 +267,141 @@ class BookingCard extends StatelessWidget {
                   ],
                 ),
                 const SizedBox(height: 12),
-                // Note
-                status == "Rejected" || status == "Active"
-                    ? SizedBox()
-                    : Container(
-                        padding: const EdgeInsets.all(10),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFE3F2FD),
-                          borderRadius: BorderRadius.circular(25),
-                        ),
-                        child: const Center(
-                          child: Text(
-                            'Customer Note: Need the car for a business trip',
-                            style: TextStyle(
-                              color: Color(0xFF1E88E5),
-                              fontSize: 12,
-                            ),
-                          ),
-                        ),
+                if (request.notes != null && request.notes!.isNotEmpty)
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFE3F2FD),
+                      borderRadius: BorderRadius.circular(25),
+                    ),
+                    child: Text(
+                      'Note: ${request.notes}',
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(
+                        color: Color(0xFF1E88E5),
+                        fontSize: 12,
                       ),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
                 const SizedBox(height: 12),
-                // Buttons
-                status == "Rejected" || status == "Active"
-                    ? SizedBox()
-                    : Row(
-                        children: [
-                          Expanded(
-                            child: OutlinedButton(
-                              onPressed: () {},
-                              style: OutlinedButton.styleFrom(
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                ),
-                              ),
-                              child: const Text(
-                                'Reject',
-                                style: TextStyle(color: Colors.black54),
-                              ),
+
+                // --- Updated Button Logic ---
+                if (currentStatus == "pending" ||
+                    currentStatus == "quotation_sent")
+                  Row(
+                    children: [
+                      Expanded(
+                        child: OutlinedButton(
+                          onPressed: () {},
+                          style: OutlinedButton.styleFrom(
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(25),
                             ),
                           ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: Container(
-                              decoration: BoxDecoration(
-                                borderRadius: BorderRadius.circular(12),
-                                gradient: AppColors().gradientBlue,
-                              ),
-                              child: ElevatedButton(
-                                onPressed: () {
-                                  context.push(AppRoute.crateQuatation);
-                                },
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: Colors.transparent,
-                                  shadowColor: Colors.transparent,
-                                ),
-                                child: const Text(
-                                  'Create Quotation',
-                                  style: TextStyle(color: Colors.white),
-                                ),
-                              ),
-                            ),
+                          child: const Text(
+                            'Reject',
+                            style: TextStyle(color: Colors.black54),
                           ),
-                        ],
+                        ),
                       ),
-                status == "Active"
-                    ? DecoratedBox(
-                        decoration: BoxDecoration(
-                          gradient: AppColors().gradientBlue,
-                          borderRadius: BorderRadius.circular(15),
-                        ),
-                        child: Center(
-                          child: Padding(
-                            padding: const EdgeInsets.all(8.0),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Container(
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(25),
+                            gradient: AppColors().gradientBlue,
+                          ),
+                          child: ElevatedButton(
+                            onPressed: () async {
+                              final response = await provider.getBookingDetails(
+                                request.id!.toString(),
+                              );
+
+                              if (response) {
+                                context.push(AppRoute.crateQuatation);
+                              } else {
+                                AppSnackbar.show(
+                                  context,
+                                  title: "Quatation",
+                                  message: "SOmething wrong, try again",
+                                );
+                              }
+                            },
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.transparent,
+                              shadowColor: Colors.transparent,
+                            ),
                             child: const Text(
-                              'View Details',
-                              style: TextStyle(
-                                color: Colors.white,
-                                fontWeight: FontWeight.w700,
-                              ),
+                              'Create Quotation',
+                              style: TextStyle(color: Colors.white),
                             ),
                           ),
                         ),
-                      )
-                    : SizedBox(),
+                      ),
+                    ],
+                  )
+                else if (currentStatus == "active")
+                  DecoratedBox(
+                    decoration: BoxDecoration(
+                      gradient: AppColors().gradientBlue,
+                      borderRadius: BorderRadius.circular(15),
+                    ),
+                    child: const Center(
+                      child: Padding(
+                        padding: EdgeInsets.all(8.0),
+                        child: Text(
+                          'View Details',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ),
+                    ),
+                  )
+                else
+                  const SizedBox.shrink(),
+
                 const SizedBox(height: 16),
               ],
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildStatusBadge(String status) {
+    Color color = Colors.orange;
+    String label = status;
+
+    if (status == "active") {
+      color = Colors.green;
+      label = "Active";
+    } else if (status == "rejected") {
+      color = Colors.red;
+      label = "Rejected";
+    } else if (status == "quotation_sent") {
+      color = Colors.blue;
+      label = "Quoted";
+    }
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Text(
+        label.toUpperCase(),
+        style: TextStyle(
+          color: color,
+          fontWeight: FontWeight.bold,
+          fontSize: 10,
+        ),
       ),
     );
   }

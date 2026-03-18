@@ -1,12 +1,40 @@
 import 'package:flutter/material.dart';
-import 'package:francesco_farag/utils/app_colors.dart';
+import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
+import 'package:intl/intl.dart';
+import 'package:francesco_farag/ui/agent/agent_provider.dart';
+import 'package:francesco_farag/utils/app_colors.dart';
 
-class CreateQuotationScreen extends StatelessWidget {
+class CreateQuotationScreen extends StatefulWidget {
   const CreateQuotationScreen({super.key});
 
   @override
+  State<CreateQuotationScreen> createState() => _CreateQuotationScreenState();
+}
+
+class _CreateQuotationScreenState extends State<CreateQuotationScreen> {
+  final Set<int> _selectedServiceIds = {};
+
+  String formatDate(DateTime? date) {
+    if (date == null) return "N/A";
+    return DateFormat('dd MMM yyyy').format(date);
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final provider = context.watch<AgentProvider>();
+    final data = provider.bookingDetails;
+
+    // Loading State
+    if (data == null) {
+      return const Scaffold(body: Center(child: CircularProgressIndicator()));
+    }
+
+    // Sync selected services from data once
+    if (_selectedServiceIds.isEmpty && data.selectedExtraServices != null) {
+      _selectedServiceIds.addAll(data.selectedExtraServices!.map((e) => e.id!));
+    }
+
     return Scaffold(
       backgroundColor: const Color(0xFFF8F9FA),
       appBar: AppBar(
@@ -14,13 +42,12 @@ class CreateQuotationScreen extends StatelessWidget {
         flexibleSpace: Container(
           decoration: BoxDecoration(gradient: AppColors().gradientPink),
         ),
-        leading: InkWell(
-          onTap: () => context.pop(),
-          child: const Icon(Icons.arrow_back, color: Colors.white),
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back, color: Colors.white),
+          onPressed: () => context.pop(),
         ),
         title: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisAlignment: MainAxisAlignment.center,
           children: const [
             Text(
               'Create Quotation',
@@ -42,49 +69,61 @@ class CreateQuotationScreen extends StatelessWidget {
         child: Column(
           children: [
             // --- Customer Info ---
-            const SummaryCard(
+            SummaryCard(
               icon: Icons.person_outline,
               title: 'Customer Info',
               children: [
-                InfoRow(label: 'Name:', value: 'John Smith'),
+                InfoRow(
+                  label: 'Name:',
+                  value: data.customerInfo?.name ?? "N/A",
+                ),
                 InfoRow(
                   label: 'License Status:',
-                  value: 'Verified',
-                  valueColor: Colors.green,
+                  value: (data.customerInfo?.licenseStatus ?? "pending")
+                      .toUpperCase(),
+                  valueColor: data.customerInfo?.licenseStatus == 'verified'
+                      ? Colors.green
+                      : Colors.orange,
                 ),
-                InfoRow(label: 'Booking ID:', value: 'book2'),
+                InfoRow(label: 'Booking ID:', value: '#${data.bookingId}'),
               ],
             ),
 
             // --- Rental Details ---
-            const SummaryCard(
+            SummaryCard(
               icon: Icons.directions_car_outlined,
               title: 'Rental Details',
               children: [
                 ListTile(
                   contentPadding: EdgeInsets.zero,
-                  leading: Icon(Icons.directions_car, color: Colors.blue),
+                  leading: const Icon(Icons.directions_car, color: Colors.blue),
                   title: Text(
-                    'BMW 5 Series',
-                    style: TextStyle(fontWeight: FontWeight.bold),
+                    data.carName ?? "N/A",
+                    style: const TextStyle(fontWeight: FontWeight.bold),
                   ),
-                  subtitle: Text('Selected Vehicle'),
+                  subtitle: const Text('Selected Vehicle'),
                 ),
                 Row(
                   children: [
                     Expanded(
-                      child: DateBox(label: 'Pickup Date', date: '2026-02-20'),
+                      child: DateBox(
+                        label: 'Pickup Date',
+                        date: formatDate(data.pickupDate),
+                      ),
                     ),
-                    SizedBox(width: 10),
+                    const SizedBox(width: 10),
                     Expanded(
-                      child: DateBox(label: 'Return Date', date: '2026-02-25'),
+                      child: DateBox(
+                        label: 'Return Date',
+                        date: formatDate(data.returnDate),
+                      ),
                     ),
                   ],
                 ),
-                SizedBox(height: 10),
+                const SizedBox(height: 10),
                 InfoRow(
                   label: 'Duration:',
-                  value: '5 days',
+                  value: '${data.durationDays ?? 0} days',
                   valueColor: Colors.blue,
                 ),
               ],
@@ -94,49 +133,72 @@ class CreateQuotationScreen extends StatelessWidget {
             SummaryCard(
               icon: Icons.category_outlined,
               title: 'Extra Services',
-              children: [
-                ServiceTile(
-                  label: 'GPS Navigation',
-                  price: '€5/day',
-                  isSelected: true,
-                ),
-                ServiceTile(label: 'Child Seat', price: '€8/day'),
-                ServiceTile(label: 'Additional Driver', price: '€10/day'),
-              ],
+              children: (data.availableExtraServices ?? []).map((service) {
+                return ServiceTile(
+                  label: service.name ?? "",
+                  price: '€${service.pricePerDay}/day',
+                  isSelected: _selectedServiceIds.contains(service.id),
+                  onChanged: (val) {
+                    setState(() {
+                      if (val == true)
+                        _selectedServiceIds.add(service.id!);
+                      else
+                        _selectedServiceIds.remove(service.id!);
+                    });
+                  },
+                );
+              }).toList(),
             ),
 
-            // --- Pricing Breakdown ---
+            // --- Pricing Breakdown (Direct from API Data) ---
             SummaryCard(
               icon: Icons.receipt_long_outlined,
               title: 'Pricing Breakdown',
               children: [
-                const PriceInputRow(
+                PriceInputRow(
                   label: 'Base Price',
-                  subLabel: '5 days x €120.00/day',
-                  value: '600',
+                  subLabel: 'Rental cost for ${data.durationDays} days',
+                  value:
+                      '€${data.pricingBreakdown?.basePrice?.toStringAsFixed(2)}',
                 ),
-                const PriceInputRow(label: 'Insurance Cost', value: '50'),
-                const InfoRow(label: 'Extra Services', value: '\$0.00'),
-                const InfoRow(
-                  label: 'Subtotal',
-                  value: '\$650.00',
-                  isBold: true,
+                InfoRow(
+                  label: 'Insurance Cost',
+                  value:
+                      '€${data.pricingBreakdown?.insuranceCost?.toStringAsFixed(2)}',
+                ),
+                InfoRow(
+                  label: 'Extra Services',
+                  value:
+                      '€${data.pricingBreakdown?.extraServicesCost?.toStringAsFixed(2)}',
                 ),
                 const Divider(),
-                const InfoRow(label: 'VAT 22%', value: '\$143.00'),
-                const PriceInputRow(label: 'Discount', value: '0'),
-                const PriceInputRow(
+                InfoRow(
+                  label: 'Subtotal',
+                  value:
+                      '€${data.pricingBreakdown?.subtotal?.toStringAsFixed(2)}',
+                  isBold: true,
+                ),
+                InfoRow(
+                  label: 'VAT (${data.pricingBreakdown?.vatPercentage}%)',
+                  value:
+                      '€${data.pricingBreakdown?.vatAmount?.toStringAsFixed(2)}',
+                ),
+                InfoRow(
+                  label: 'Discount',
+                  value:
+                      '-€${data.pricingBreakdown?.discount?.toStringAsFixed(2)}',
+                  valueColor: Colors.red,
+                ),
+                PriceInputRow(
                   label: 'Security Deposit',
-                  value: '300',
+                  value:
+                      '€${data.pricingBreakdown?.securityDeposit?.toStringAsFixed(2)}',
                   valueColor: Colors.orange,
                 ),
-                const SizedBox(height: 10),
+                const SizedBox(height: 16),
                 // Total Price Highlight
                 Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 20,
-                    vertical: 15,
-                  ),
+                  padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
                     gradient: const LinearGradient(
                       colors: [Color(0xFF64B5F6), Color(0xFF3949AB)],
@@ -145,14 +207,14 @@ class CreateQuotationScreen extends StatelessWidget {
                   ),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: const [
-                      Text(
+                    children: [
+                      const Text(
                         'Total Price',
                         style: TextStyle(color: Colors.white, fontSize: 16),
                       ),
                       Text(
-                        '\$793.00',
-                        style: TextStyle(
+                        '€${data.pricingBreakdown?.totalPrice?.toStringAsFixed(2)}',
+                        style: const TextStyle(
                           color: Colors.white,
                           fontSize: 22,
                           fontWeight: FontWeight.bold,
@@ -164,14 +226,14 @@ class CreateQuotationScreen extends StatelessWidget {
               ],
             ),
 
-            // --- Footer Buttons ---
+            const SizedBox(height: 20),
+            // --- Actions ---
             OutlinedButton.icon(
               onPressed: () {},
               icon: const Icon(Icons.download_outlined),
               label: const Text('Generate PDF'),
               style: OutlinedButton.styleFrom(
                 minimumSize: const Size(double.infinity, 50),
-                side: const BorderSide(color: Colors.blue),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(25),
                 ),
@@ -207,13 +269,12 @@ class CreateQuotationScreen extends StatelessWidget {
   }
 }
 
-// --- Reusable Sub-Widgets ---
+// --- Reusable Sub-Widgets (unchanged logic) ---
 
 class SummaryCard extends StatelessWidget {
   final IconData icon;
   final String title;
   final List<Widget> children;
-
   const SummaryCard({
     super.key,
     required this.icon,
@@ -229,15 +290,11 @@ class SummaryCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.grey.shade100),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(
-              0.05,
-            ), // Very light opacity for a clean look
-            blurRadius: 10, // Softens the shadow edge
-            spreadRadius: 1, // Extends the shadow slightly
-            offset: const Offset(0, 4), // Pushes the shadow downward
+            color: Colors.black12,
+            blurRadius: 4,
+            offset: const Offset(0, 2),
           ),
         ],
       ),
@@ -246,7 +303,7 @@ class SummaryCard extends StatelessWidget {
         children: [
           Row(
             children: [
-              Icon(icon, size: 20, color: Colors.black87),
+              Icon(icon, size: 20),
               const SizedBox(width: 8),
               Text(
                 title,
@@ -257,7 +314,7 @@ class SummaryCard extends StatelessWidget {
               ),
             ],
           ),
-          const Divider(height: 24),
+          SizedBox(height: 10),
           ...children,
         ],
       ),
@@ -270,7 +327,6 @@ class InfoRow extends StatelessWidget {
   final String value;
   final Color? valueColor;
   final bool isBold;
-
   const InfoRow({
     super.key,
     required this.label,
@@ -292,7 +348,6 @@ class InfoRow extends StatelessWidget {
             style: TextStyle(
               fontWeight: isBold ? FontWeight.bold : FontWeight.w500,
               color: valueColor ?? Colors.black87,
-              fontSize: 14,
             ),
           ),
         ],
@@ -306,7 +361,6 @@ class PriceInputRow extends StatelessWidget {
   final String? subLabel;
   final String value;
   final Color? valueColor;
-
   const PriceInputRow({
     super.key,
     required this.label,
@@ -334,14 +388,11 @@ class PriceInputRow extends StatelessWidget {
             ],
           ),
           Container(
-            width: 80,
-            height: 35,
-            padding: const EdgeInsets.symmetric(horizontal: 12),
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
             decoration: BoxDecoration(
-              border: Border.all(color: Colors.grey.shade200),
+              color: Colors.grey.shade50,
               borderRadius: BorderRadius.circular(8),
             ),
-            alignment: Alignment.centerRight,
             child: Text(
               value,
               style: TextStyle(
@@ -360,40 +411,31 @@ class ServiceTile extends StatelessWidget {
   final String label;
   final String price;
   final bool isSelected;
-
+  final ValueChanged<bool?> onChanged;
   const ServiceTile({
     super.key,
     required this.label,
     required this.price,
-    this.isSelected = false,
+    required this.isSelected,
+    required this.onChanged,
   });
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 8),
-      decoration: BoxDecoration(
-        color: const Color(0xFFF1F8FE),
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: CheckboxListTile(
-        value: isSelected,
-        onChanged: (val) {},
-        title: Text(
-          label,
-          style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500),
+    return CheckboxListTile(
+      value: isSelected,
+      onChanged: onChanged,
+      title: Text(label, style: const TextStyle(fontSize: 13)),
+      secondary: Text(
+        price,
+        style: const TextStyle(
+          color: Colors.blue,
+          fontWeight: FontWeight.bold,
+          fontSize: 12,
         ),
-        secondary: Text(
-          price,
-          style: const TextStyle(
-            color: Colors.blue,
-            fontWeight: FontWeight.bold,
-            fontSize: 12,
-          ),
-        ),
-        controlAffinity: ListTileControlAffinity.leading,
-        dense: true,
       ),
+      controlAffinity: ListTileControlAffinity.leading,
+      dense: true,
     );
   }
 }
@@ -401,7 +443,6 @@ class ServiceTile extends StatelessWidget {
 class DateBox extends StatelessWidget {
   final String label;
   final String date;
-
   const DateBox({super.key, required this.label, required this.date});
 
   @override
@@ -416,10 +457,9 @@ class DateBox extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(label, style: const TextStyle(color: Colors.blue, fontSize: 10)),
-          const SizedBox(height: 4),
           Text(
             date,
-            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
           ),
         ],
       ),
