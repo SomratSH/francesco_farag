@@ -39,7 +39,7 @@ class Results {
   String? fuelType;
   int? seats;
   int? doors;
-  Null? featuredImageUrl;
+  String? featuredImageUrl;
   String? agencyName;
   String? agencyLocation;
   double? averageRating;

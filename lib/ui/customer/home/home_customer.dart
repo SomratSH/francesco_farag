@@ -3,6 +3,7 @@ import 'package:flutter_svg/svg.dart';
 import 'package:francesco_farag/routing/app_route.dart';
 import 'package:francesco_farag/ui/customer/customer_provider.dart';
 import 'package:francesco_farag/utils/app_colors.dart';
+import 'package:francesco_farag/utils/custom_loading_dialog.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
@@ -207,7 +208,8 @@ class HomeCustomer extends StatelessWidget {
             ),
             provider.isLoading
                 ? CircularProgressIndicator()
-                : provider.carsModel.results!.isEmpty
+                : provider.carsModel.results == null ||
+                      provider.carsModel.results!.isEmpty
                 ? Text("No Cars")
                 : SizedBox(
                     height: 280,
@@ -216,15 +218,48 @@ class HomeCustomer extends StatelessWidget {
                       padding: const EdgeInsets.only(left: 24),
                       children: List.generate(
                         provider.carsModel.results!.length,
-                        (index) => CarCard(
-                          name: provider.carsModel.results![index].carName
-                              .toString(),
-                          type: provider.carsModel.results![index].category!,
-                          price: '89',
-                          seats: '5',
-                          gear: 'Automatic',
-                          door: 4,
-                          engineType: "Diesel",
+                        (index) => InkWell(
+                          onTap: () async {
+                            final response = await provider.fetchCarDetails(
+                              provider.carsModel.results![index].id!,
+                              context
+                            );
+                            if (response) {
+                              if (context.mounted) {
+                                context.push(AppRoute.carDetails);
+                              }
+                            } else {
+                             
+                            }
+                          },
+                          child: CarCard(
+                            image:
+                                provider
+                                        .carsModel
+                                        .results![index]
+                                        .featuredImageUrl ==
+                                    null
+                                ? ""
+                                : provider
+                                      .carsModel
+                                      .results![index]
+                                      .featuredImageUrl
+                                      .toString(),
+                            name: provider.carsModel.results![index].carName
+                                .toString(),
+                            type: provider.carsModel.results![index].category!,
+                            price:
+                                provider.carsModel.results![index].pricePerDay!,
+                            seats: provider.carsModel.results![index].seats!
+                                .toString(),
+                            gear: provider
+                                .carsModel
+                                .results![index]
+                                .transmission!,
+                            door: provider.carsModel.results![index].doors!,
+                            engineType:
+                                provider.carsModel.results![index].fuelType!,
+                          ),
                         ),
                       ),
                     ),
@@ -394,7 +429,7 @@ class HomeCustomer extends StatelessWidget {
 }
 
 class CarCard extends StatelessWidget {
-  final String name, type, price, seats, gear, engineType;
+  final String name, type, price, seats, gear, engineType, image;
   final int door;
 
   const CarCard({
@@ -406,6 +441,7 @@ class CarCard extends StatelessWidget {
     required this.price,
     required this.seats,
     required this.door,
+    required this.image,
   });
 
   @override
@@ -433,7 +469,9 @@ class CarCard extends StatelessWidget {
           ClipRRect(
             borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
             child: Image.network(
-              'https://images.unsplash.com/photo-1560958089-b8a1929cea89?q=80&w=2071&auto=format&fit=crop',
+              image.isNotEmpty
+                  ? image
+                  : 'https://images.unsplash.com/photo-1560958089-b8a1929cea89?q=80&w=2071&auto=format&fit=crop',
               height: 110,
               width: double.infinity,
               fit: BoxFit.cover,

@@ -1,8 +1,16 @@
 import 'package:flutter/material.dart';
+import 'package:francesco_farag/ui/customer/model/rental_model.dart';
 import 'package:go_router/go_router.dart';
 
+import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
+// Import your model path here
+// import 'package:francesco_farag/ui/customer/model/rental_model.dart';
+
 class RentalAssignmentScreen extends StatefulWidget {
-  const RentalAssignmentScreen({super.key});
+  final dynamic rental; // Use RentalRequest rental if imported
+
+  const RentalAssignmentScreen({super.key, required this.rental});
 
   @override
   State<RentalAssignmentScreen> createState() => _RentalAssignmentScreenState();
@@ -14,16 +22,19 @@ class _RentalAssignmentScreenState extends State<RentalAssignmentScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final r = widget.rental;
+
     return Scaffold(
       backgroundColor: const Color(0xFFF8F9FA),
       appBar: AppBar(
         backgroundColor: Colors.white,
         elevation: 0.5,
-        leading:  InkWell(
+        leading: InkWell(
           onTap: () => context.pop(),
-          child: Icon(Icons.arrow_back, color: Colors.black87)),
-        title: const Text('Rental Assignment', 
-          style: TextStyle(color: Colors.black87, fontWeight: FontWeight.bold, fontSize: 16)),
+          child: const Icon(Icons.arrow_back, color: Colors.black87),
+        ),
+        title: const Text('Rental Assignment',
+            style: TextStyle(color: Colors.black87, fontWeight: FontWeight.bold, fontSize: 16)),
         centerTitle: true,
       ),
       body: SingleChildScrollView(
@@ -31,19 +42,20 @@ class _RentalAssignmentScreenState extends State<RentalAssignmentScreen> {
         child: Column(
           children: [
             // --- 1. Rental Agreement Summary Card ---
-            _buildAgreementSummary(),
+            _buildAgreementSummary(r),
             const SizedBox(height: 20),
 
             // --- 2. Terms & Conditions Detail Section ---
-            _buildDetailedTerms(),
-            const SizedBox(height: 100), // Space for sticky bottom actions
+            _buildDetailedTerms(r),
+            const SizedBox(height: 120), // Space for sticky bottom actions
           ],
         ),
       ),
+      bottomSheet: _buildBottomActions(),
     );
   }
 
-  Widget _buildAgreementSummary() {
+  Widget _buildAgreementSummary(RentalRequest r) {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
@@ -54,24 +66,24 @@ class _RentalAssignmentScreenState extends State<RentalAssignmentScreen> {
       child: Column(
         children: [
           const Text('Car Rental Agreement', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
-          const Text('Contract ID: #2', style: TextStyle(color: Colors.grey, fontSize: 12)),
+          Text('Contract ID: #${r.id}', style: const TextStyle(color: Colors.grey, fontSize: 12)),
           const Divider(height: 30),
-          _infoRow('Agency:', 'EuroDrive Agency'),
-          _infoRow('Vehicle:', 'BMW 3 Series'),
-          _infoRow('Renter:', 'John Smith'),
-          _infoRow('Email:', 'dj@gmail.com'),
-          _infoRow('Pickup:', '2026-02-15 10:00 at\nMadrid Centro - Gran Via 45'),
-          _infoRow('Return:', '2026-02-20 10:00'),
+          _infoRow('Agency:', r.carDetails.agencyName ?? 'N/A'),
+          _infoRow('Vehicle:', r.carDetails.carName),
+          _infoRow('Renter Email:', r.customerEmail ?? 'N/A'),
+          _infoRow('Pickup:', '${r.pickupDate.split('T').first} at\n${r.carDetails.agencyLocation ?? "Agency Location"}'),
+          _infoRow('Return:', r.returnDate.split('T').first),
           const Divider(height: 30),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: const [
-              Text('Total Amount:', style: TextStyle(color: Colors.grey)),
-              Text('\$104', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
+            children: [
+              const Text('Total Amount:', style: TextStyle(color: Colors.grey)),
+              Text('\$${r.quotation?.totalPrice ?? r.carDetails.pricePerDay}',
+                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: Colors.blue)),
             ],
           ),
           const SizedBox(height: 20),
-          
+
           // Terms Checkbox
           if (!_isSigned)
             Container(
@@ -83,7 +95,7 @@ class _RentalAssignmentScreenState extends State<RentalAssignmentScreen> {
                   SizedBox(
                     height: 24, width: 24,
                     child: Checkbox(
-                      value: _termsAccepted, 
+                      value: _termsAccepted,
                       onChanged: (v) => setState(() => _termsAccepted = v!),
                       activeColor: Colors.blue,
                     ),
@@ -98,7 +110,7 @@ class _RentalAssignmentScreenState extends State<RentalAssignmentScreen> {
                 ],
               ),
             ),
-          
+
           if (_isSigned) _buildSignedBadge(),
         ],
       ),
@@ -121,24 +133,34 @@ class _RentalAssignmentScreenState extends State<RentalAssignmentScreen> {
             ],
           ),
           SizedBox(height: 4),
-          Text('Signed by EuroCar Rentals. Your rental is confirmed. You can collect the car on the pickup date.', 
-            style: TextStyle(fontSize: 11, color: Colors.green)),
+          Text('Signed by Customer. Your rental is confirmed. You can collect the car on the pickup date.',
+              style: TextStyle(fontSize: 11, color: Colors.green)),
         ],
       ),
     );
   }
 
-  Widget _buildDetailedTerms() {
+  Widget _buildDetailedTerms(dynamic r) {
+    final pickup = r.pickupDate.split('T').first;
+    final returnD = r.returnDate.split('T').first;
+    final total = r.quotation?.totalPrice ?? r.carDetails.pricePerDay;
+    final deposit = r.quotation?.securityDeposit ?? "500.00";
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         const Text('Rental Agreement Terms', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
         const SizedBox(height: 15),
-        _termParagraph('1. Rental Period', 'The rental period begins on 2026-02-15 and ends on 2026-02-18. The vehicle must be returned by the agreed time. Late returns may incur additional charges.'),
-        _termParagraph('2. Payment Terms', 'The total rental fee is \$297, which includes the base rental charge and any additional services. A security deposit of \$200 will be held and refunded after the vehicle is returned in good condition.'),
-        _termParagraph('3. Driver Requirements', 'The driver must possess a valid driving license and be at least 21 years old. The license must be presented at pickup.'),
-        _termParagraph('4. Insurance Coverage', 'The rental includes comprehensive insurance coverage. However, the renter is responsible for any damages caused by negligence or violation of traffic laws.'),
-        _termParagraph('5. Vehicle Condition', 'The renter agrees to return the vehicle in the same condition as received, with the same fuel level.'),
+        _termParagraph('1. Rental Period', 
+          'The rental period begins on $pickup and ends on $returnD. The vehicle must be returned by the agreed time. Late returns may incur additional charges.'),
+        _termParagraph('2. Payment Terms', 
+          'The total rental fee is \$$total, which includes the base rental charge and any additional services. A security deposit of \$$deposit will be held and refunded after the vehicle is returned in good condition.'),
+        _termParagraph('3. Driver Requirements', 
+          'The driver must possess a valid driving license and be at least 21 years old. The license must be presented at pickup.'),
+        _termParagraph('4. Insurance Coverage', 
+          'The rental includes insurance coverage as specified in the quotation. However, the renter is responsible for any damages caused by negligence or violation of traffic laws.'),
+        _termParagraph('5. Vehicle Condition', 
+          'The renter agrees to return the vehicle in the same condition as received, with the same fuel level.'),
       ],
     );
   }
@@ -170,38 +192,41 @@ class _RentalAssignmentScreenState extends State<RentalAssignmentScreen> {
     );
   }
 
-  // Action Button Container
-  @override
-  Widget? get bottomSheet => Container(
-    padding: const EdgeInsets.all(20),
-    color: Colors.white,
-    child: Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        if (!_isSigned)
-          SizedBox(
-            width: double.infinity,
-            height: 50,
-            child: ElevatedButton(
-              onPressed: _termsAccepted ? () => setState(() => _isSigned = true) : null,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: _termsAccepted ? Colors.blue : Colors.grey.shade300,
+  Widget _buildBottomActions() {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      color: Colors.white,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (!_isSigned)
+            SizedBox(
+              width: double.infinity,
+              height: 50,
+              child: ElevatedButton(
+                onPressed: _termsAccepted ? () => setState(() => _isSigned = true) : null,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: _termsAccepted ? Colors.blue : Colors.grey.shade300,
+                  elevation: 0,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                ),
+                child: const Text('Sign Agreement', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+              ),
+            ),
+          if (_isSigned)
+            OutlinedButton.icon(
+              onPressed: () {
+                // Handle PDF Download
+              },
+              icon: const Icon(Icons.download, size: 18),
+              label: const Text('Download Rental Agreement PDF'),
+              style: OutlinedButton.styleFrom(
+                minimumSize: const Size(double.infinity, 50),
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
               ),
-              child: const Text('Sign Agreement', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
             ),
-          ),
-        if (_isSigned)
-          OutlinedButton.icon(
-            onPressed: () {},
-            icon: const Icon(Icons.download, size: 18),
-            label: const Text('Download Rental Agreement PDF'),
-            style: OutlinedButton.styleFrom(
-              minimumSize: const Size(double.infinity, 50),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-            ),
-          ),
-      ],
-    ),
-  );
+        ],
+      ),
+    );
+  }
 }

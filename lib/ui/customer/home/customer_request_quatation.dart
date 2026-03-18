@@ -1,5 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:francesco_farag/routing/app_route.dart';
+import 'package:francesco_farag/ui/authentication/customer_login.dart';
+import 'package:francesco_farag/ui/customer/customer_provider.dart';
+import 'package:francesco_farag/utils/custom_loading_dialog.dart';
+import 'package:francesco_farag/utils/custom_snackbar.dart';
 import 'package:go_router/go_router.dart';
+import 'package:provider/provider.dart';
 
 class CustomerRequestQuatation extends StatefulWidget {
   const CustomerRequestQuatation({super.key});
@@ -11,22 +17,95 @@ class CustomerRequestQuatation extends StatefulWidget {
 
 class _CustomerRequestQuatationState extends State<CustomerRequestQuatation> {
   bool showSummary = false;
-  final Map<String, bool> _extraServices = {
-    'Extra Insurance': false,
-    'GPS Navigation': false,
-    'Child Seat': false,
-    'Additional Driver': false,
-  };
+  // final Map<String, bool> _extraServices = {
+  //   'Extra Insurance': false,
+  //   'GPS Navigation': false,
+  //   'Child Seat': false,
+  //   'Additional Driver': false,
+  // };
 
-  final Map<String, int> _prices = {
-    'Extra Insurance': 15,
-    'GPS Navigation': 10,
-    'Child Seat': 8,
-    'Additional Driver': 20,
-  };
+  // final Map<String, int> _prices = {
+  //   'Extra Insurance': 15,
+  //   'GPS Navigation': 10,
+  //   'Child Seat': 8,
+  //   'Additional Driver': 20,
+  // };
+
+  // Controllers
+  final TextEditingController _pickupLoc = TextEditingController();
+  final TextEditingController _dropoffLoc = TextEditingController();
+  final TextEditingController _notes = TextEditingController();
+
+  // Date State
+  DateTime? _pickupDateTime;
+  DateTime? _dropoffDateTime;
+
+  List<int> idList = [];
+
+  List<double> extra = [];
+  String getExtraTotal() {
+    if (extra.isNotEmpty) {
+      double totalExtra = extra.fold(
+        0,
+        (previous, current) => previous + current,
+      );
+      return totalExtra.toString();
+    } else {
+      return "0.0";
+    }
+  }
+
+  double getTotalValue(double baseFase) {
+    // Using .fold to sum up all elements in the 'extra' list
+    double totalExtra = extra.fold(
+      0,
+      (previous, current) => previous + current,
+    );
+
+    return baseFase + totalExtra;
+  }
+
+  // --- SERVICE ID STORAGE ---
+  final Map<int, bool> _serviceSelectionMap = {};
+
+  @override
+  void dispose() {
+    _pickupLoc.dispose();
+    _dropoffLoc.dispose();
+    _notes.dispose();
+    super.dispose();
+  }
+
+  // Formatting to: 2026-03-15T10:00:00Z
+  String _formatToApi(DateTime? dt) {
+    if (dt == null) return "";
+    return "${dt.toIso8601String().split('.')[0]}Z";
+  }
+
+  Future<void> _selectDateTime(BuildContext context, bool isPickup) async {
+    final DateTime? d = await showDatePicker(
+      context: context,
+      initialDate: DateTime.now(),
+      firstDate: DateTime.now(),
+      lastDate: DateTime(2030),
+    );
+    if (d != null && mounted) {
+      final TimeOfDay? t = await showTimePicker(
+        context: context,
+        initialTime: TimeOfDay.now(),
+      );
+      if (t != null) {
+        setState(() {
+          final dt = DateTime(d.year, d.month, d.day, t.hour, t.minute);
+          isPickup ? _pickupDateTime = dt : _dropoffDateTime = dt;
+        });
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
+    final provider = context.watch<CustomerProvider>();
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
@@ -54,21 +133,65 @@ class _CustomerRequestQuatationState extends State<CustomerRequestQuatation> {
         child: Column(
           children: [
             // --- 1. Car Preview Card ---
-            _buildCarPreview(),
+            _buildCarPreview(provider),
             const SizedBox(height: 16),
 
             // --- 2. Location Selection ---
             _buildSectionCard(
               child: Column(
                 children: [
-                  _buildLocationDropdown(
+                  _buildLocationField(
                     'Pickup Location',
                     'Enter pickup location',
+                    _pickupLoc,
+                    () {},
+                    readOnly: false,
                   ),
                   const SizedBox(height: 12),
-                  _buildLocationDropdown(
+                  _buildLocationField(
                     'Drop-off Location',
                     'Enter drop-off location',
+                    _dropoffLoc,
+                    () {},
+                    readOnly: false,
+                  ),
+
+                  const SizedBox(height: 12),
+                  _buildLocationField(
+                    'Pickup Date',
+                    'Enter pickup Date',
+                    TextEditingController(
+                      text: _pickupDateTime == null
+                          ? ""
+                          : _pickupDateTime
+                                .toString()
+                                .split("T")
+                                .first
+                                .toString(),
+                    ),
+                    () async {
+                      await _selectDateTime(context, true);
+                    },
+                    isDate: true,
+                  ),
+                  const SizedBox(height: 12),
+                  _buildLocationField(
+                    'Drop-off Date',
+                    'Enter drop-off Date',
+                    TextEditingController(
+                      text: _dropoffDateTime == null
+                          ? ""
+                          : _dropoffDateTime
+                                .toString()
+                                .split("T")
+                                .first
+                                .toString(),
+                    ),
+                    () {
+                      _selectDateTime(context, false);
+                    },
+
+                    isDate: true,
                   ),
                   if (showSummary) ...[
                     const SizedBox(height: 12),
@@ -92,9 +215,15 @@ class _CustomerRequestQuatationState extends State<CustomerRequestQuatation> {
             _buildSectionCard(
               title: 'Extra Services (optional)',
               child: Column(
-                children: _extraServices.keys.map((service) {
-                  return _buildServiceCheckbox(service, _prices[service]!);
-                }).toList(),
+                children: List.generate(
+                  provider.carDetails!.availableServices!.length,
+                  (index) => _buildServiceCheckbox(
+                    provider.carDetails!.availableServices![index].name!,
+                    provider.carDetails!.availableServices![index].pricePerDay
+                        .toString(),
+                    provider.carDetails!.availableServices![index].id!.toInt(),
+                  ),
+                ),
               ),
             ),
             const SizedBox(height: 16),
@@ -103,6 +232,7 @@ class _CustomerRequestQuatationState extends State<CustomerRequestQuatation> {
             _buildSectionCard(
               title: 'Additional Notes (optional)',
               child: TextField(
+                controller: _notes,
                 maxLines: 3,
                 decoration: InputDecoration(
                   hintText: 'Any special requests or requirements...',
@@ -121,19 +251,19 @@ class _CustomerRequestQuatationState extends State<CustomerRequestQuatation> {
             const SizedBox(height: 16),
 
             // --- 5. Estimated Cost (Only in Summary State) ---
-            if (showSummary) _buildEstimatedCost(),
+            if (idList.isNotEmpty) _buildEstimatedCost(provider),
 
             const SizedBox(height: 24),
 
             // --- 6. Action Button ---
-            _buildActionButton(),
+            _buildActionButton(provider, context),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildCarPreview() {
+  Widget _buildCarPreview(CustomerProvider provider) {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
@@ -154,7 +284,8 @@ class _CustomerRequestQuatationState extends State<CustomerRequestQuatation> {
           ClipRRect(
             borderRadius: BorderRadius.circular(12),
             child: Image.network(
-              'https://images.unsplash.com/photo-1560958089-b8a1929cea89?q=80&w=2071&auto=format&fit=crop',
+              provider.carDetails!.featuredImageUrl ??
+                  'https://images.unsplash.com/photo-1560958089-b8a1929cea89?q=80&w=2071&auto=format&fit=crop',
               width: double.infinity,
               height: 200,
               fit: BoxFit.cover,
@@ -167,9 +298,14 @@ class _CustomerRequestQuatationState extends State<CustomerRequestQuatation> {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  const Text(
-                    'Tesla Model 3',
-                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                  Flexible(
+                    child: Text(
+                      provider.carDetails!.carName!,
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
+                      ),
+                    ),
                   ),
                   Container(
                     padding: const EdgeInsets.symmetric(
@@ -181,7 +317,7 @@ class _CustomerRequestQuatationState extends State<CustomerRequestQuatation> {
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: Text(
-                      'Economy',
+                      provider.carDetails!.category!,
                       style: TextStyle(
                         color: Colors.pink.shade400,
                         fontSize: 10,
@@ -191,11 +327,11 @@ class _CustomerRequestQuatationState extends State<CustomerRequestQuatation> {
                   ),
                 ],
               ),
-              const Row(
+              Row(
                 children: [
                   Icon(Icons.star, color: Colors.orange, size: 14),
                   Text(
-                    ' 4.8',
+                    provider.carDetails!.averageRating!.toString(),
                     style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
                   ),
                 ],
@@ -203,15 +339,15 @@ class _CustomerRequestQuatationState extends State<CustomerRequestQuatation> {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  const Text(
-                    '5 seats • Automatic',
+                  Text(
+                    '${provider.carDetails!.seats} seats • ${provider.carDetails!.transmission}',
                     style: TextStyle(color: Colors.grey, fontSize: 12),
                   ),
                   RichText(
-                    text: const TextSpan(
+                    text: TextSpan(
                       children: [
                         TextSpan(
-                          text: '\$89',
+                          text: '\$${provider.carDetails!.pricePerDay}',
                           style: TextStyle(
                             color: Colors.blue,
                             fontWeight: FontWeight.bold,
@@ -267,7 +403,14 @@ class _CustomerRequestQuatationState extends State<CustomerRequestQuatation> {
     );
   }
 
-  Widget _buildLocationDropdown(String label, String hint) {
+  Widget _buildLocationField(
+    String label,
+    String hint,
+    TextEditingController controller,
+    Function()? ontap, {
+    bool readOnly = true,
+    bool isDate = false,
+  }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -276,31 +419,44 @@ class _CustomerRequestQuatationState extends State<CustomerRequestQuatation> {
           style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500),
         ),
         const SizedBox(height: 6),
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12),
-          decoration: BoxDecoration(
-            border: Border.all(color: Colors.grey.shade100),
+        Material(
+          // Added Material to ensure the InkWell splash effect shows up
+          color: Colors.transparent,
+          child: InkWell(
             borderRadius: BorderRadius.circular(12),
-          ),
-          child: DropdownButtonHideUnderline(
-            child: DropdownButton(
-              isExpanded: true,
-              hint: Row(
-                children: [
-                  const Icon(
-                    Icons.location_on_outlined,
-                    size: 16,
-                    color: Colors.grey,
-                  ),
-                  const SizedBox(width: 8),
-                  Text(
-                    hint,
-                    style: const TextStyle(fontSize: 12, color: Colors.grey),
-                  ),
-                ],
+            onTap: readOnly ? ontap : null, // Pass the function directly
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12),
+              decoration: BoxDecoration(
+                border: Border.all(color: Colors.grey.shade100),
+                borderRadius: BorderRadius.circular(12),
               ),
-              items: const [],
-              onChanged: (v) {},
+              child: IgnorePointer(
+                // <--- THIS IS THE KEY
+                ignoring:
+                    readOnly, // When read-only, it lets the tap go to the InkWell
+                child: TextField(
+                  readOnly: readOnly,
+                  controller: controller,
+                  style: const TextStyle(fontSize: 13),
+                  decoration: InputDecoration(
+                    isDense: true,
+                    border: InputBorder.none,
+                    icon: Icon(
+                      isDate
+                          ? Icons.calendar_month
+                          : Icons.location_on_outlined,
+                      size: 16,
+                      color: Colors.grey,
+                    ),
+                    hintText: hint,
+                    hintStyle: const TextStyle(
+                      fontSize: 12,
+                      color: Colors.grey,
+                    ),
+                  ),
+                ),
+              ),
             ),
           ),
         ),
@@ -308,17 +464,23 @@ class _CustomerRequestQuatationState extends State<CustomerRequestQuatation> {
     );
   }
 
-  Widget _buildServiceCheckbox(String label, int price) {
+  Widget _buildServiceCheckbox(String label, String price, int id) {
+    // 1. Check if this specific ID is currently selected
+    bool isSelected = idList.contains(id);
+
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
       decoration: BoxDecoration(
-        color: _extraServices[label]!
-            ? const Color(0xFFF0F7FF)
-            : Colors.transparent,
-        border: Border.all(color: Colors.grey.shade100),
+        // 2. Change color based on selection, not label content
+        color: isSelected ? const Color(0xFFF0F7FF) : Colors.white,
+        border: Border.all(
+          color: isSelected ? Colors.blue.shade100 : Colors.grey.shade100,
+        ),
         borderRadius: BorderRadius.circular(12),
       ),
       child: CheckboxListTile(
+        controlAffinity:
+            ListTileControlAffinity.leading, // Moves checkbox to the left
         title: Text(
           label,
           style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500),
@@ -327,16 +489,27 @@ class _CustomerRequestQuatationState extends State<CustomerRequestQuatation> {
           '\$$price/day',
           style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold),
         ),
-        value: _extraServices[label],
+        value: isSelected,
         activeColor: Colors.blue,
-        onChanged: (val) => setState(() => _extraServices[label] = val!),
+        onChanged: (bool? val) {
+          setState(() {
+            if (val == true) {
+              idList.add(id); // Select
+              extra.add(double.parse(price));
+            } else {
+              idList.remove(id); // Deselect
+              extra.add(double.parse(price));
+            }
+          });
+        },
         contentPadding: const EdgeInsets.symmetric(horizontal: 12),
         dense: true,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       ),
     );
   }
 
-  Widget _buildEstimatedCost() {
+  Widget _buildEstimatedCost(CustomerProvider provider) {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(16),
@@ -361,18 +534,21 @@ class _CustomerRequestQuatationState extends State<CustomerRequestQuatation> {
             style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
           ),
           const SizedBox(height: 12),
-          _costRow('Base rental (01 days)', '\$89'),
-          _costRow('Extra services', '\$15'),
+          _costRow(
+            'Base rental (01 days)',
+            '\$${provider.carDetails!.pricePerDay!}',
+          ),
+          _costRow('Extra services', '\$${getExtraTotal()}'),
           const Divider(height: 24),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: const [
+            children: [
               Text(
                 'Estimated Total',
                 style: TextStyle(fontWeight: FontWeight.bold),
               ),
               Text(
-                '\$104',
+                '\$${getTotalValue(double.parse(provider.carDetails!.pricePerDay!))}',
                 style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
               ),
             ],
@@ -407,7 +583,7 @@ class _CustomerRequestQuatationState extends State<CustomerRequestQuatation> {
     );
   }
 
-  Widget _buildActionButton() {
+  Widget _buildActionButton(CustomerProvider provider, BuildContext context) {
     return Container(
       width: double.infinity,
       height: 50,
@@ -422,7 +598,44 @@ class _CustomerRequestQuatationState extends State<CustomerRequestQuatation> {
         color: !showSummary ? Colors.pink.shade50.withOpacity(0.3) : null,
       ),
       child: ElevatedButton(
-        onPressed: () => setState(() => showSummary = true),
+        onPressed: () async {
+          // 1. Validation check before showing loading
+          if (_pickupDateTime == null || _dropoffDateTime == null) {
+            AppSnackbar.show(
+              context,
+              title: "Error",
+              message: "Please select both dates",
+              type: SnackType.error,
+            );
+            return;
+          }
+
+          CustomLoading.show(context);
+
+          // 2. Format dates correctly for the API (ISO 8601)
+          final String formattedPickup = _pickupDateTime!.toIso8601String();
+          final String formattedReturn = _dropoffDateTime!.toIso8601String();
+
+          final bool success = await provider.createRentalRequest(
+            carId: provider.carDetails!.id!,
+            pickupDate: formattedPickup,
+            returnDate: formattedReturn,
+            serviceIds: idList,
+            notes: _notes.text.trim().isEmpty
+                ? "No notes provided"
+                : _notes.text.trim(),
+            context: context,
+          );
+
+          // 3. Handle navigation safely
+          if (context.mounted) {
+            CustomLoading.hide(context);
+            if (success) {
+              if(context.mounted){context.go(AppRoute.homeCustomer);}
+              
+            }
+          }
+        },
         style: ElevatedButton.styleFrom(
           backgroundColor: Colors.transparent,
           shadowColor: Colors.transparent,

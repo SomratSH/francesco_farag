@@ -13,6 +13,7 @@ class AppProvider {
     ChangeNotifierProvider(
       create: (_) => CustomerProvider()
         ..getFeatureCar()
+        ..fetchRentalList()
         ..fetchCustomerProfile(),
     ),
   ];

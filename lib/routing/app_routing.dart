@@ -37,6 +37,7 @@ import 'package:francesco_farag/ui/customer/home/home_customer.dart';
 import 'package:francesco_farag/ui/customer/landing_customer/landing_customer.dart';
 import 'package:francesco_farag/ui/customer/message_customer/customer_chat.dart';
 import 'package:francesco_farag/ui/customer/message_customer/message_customer.dart';
+import 'package:francesco_farag/ui/customer/model/rental_model.dart';
 import 'package:francesco_farag/ui/customer/profile_customer/edit_profile_customer.dart';
 import 'package:francesco_farag/ui/customer/profile_customer/profile_customer.dart';
 import 'package:francesco_farag/ui/customer/rentals_customers/renstals_assignment.dart';
@@ -49,8 +50,12 @@ class AppRouting {
     final prefs = await SharedPreferences.getInstance();
     final token = prefs.getString('authToken');
     final role = prefs.getString('role');
+
+        final inital = (token != null && token.isNotEmpty)
+        ? (role == 'customer' ? AppRoute.homeCustomer : AppRoute.home)
+        : AppRoute.splash;
     return GoRouter(
-      initialLocation: AppRoute.splash,
+      initialLocation: inital,
       debugLogDiagnostics: true,
       routes: [
         GoRoute(
@@ -252,7 +257,10 @@ class AppRouting {
         GoRoute(
           path: AppRoute.rentalsAssingment,
           name: 'rentals-assingment',
-          builder: (context, state) => const RentalAssignmentScreen(),
+          builder: (context, state) {
+    final rental = state.extra as RentalRequest; // Cast the extra data
+    return RentalAssignmentScreen(rental: rental);
+  },
         ),
         GoRoute(
           path: AppRoute.advancedFilter,
