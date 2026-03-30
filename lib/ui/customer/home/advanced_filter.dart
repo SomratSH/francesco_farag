@@ -1,7 +1,12 @@
 import 'package:flutter/material.dart';
 
 import 'package:flutter/material.dart';
+import 'package:francesco_farag/ui/customer/customer_provider.dart';
+import 'package:francesco_farag/ui/customer/home/home_customer.dart';
+import 'package:francesco_farag/ui/customer/model/cars_model.dart';
+import 'package:francesco_farag/utils/custom_loading_dialog.dart';
 import 'package:go_router/go_router.dart';
+import 'package:provider/provider.dart';
 
 class AdvancedFilter extends StatefulWidget {
   const AdvancedFilter({super.key});
@@ -12,11 +17,22 @@ class AdvancedFilter extends StatefulWidget {
 
 class _AdvancedFilterState extends State<AdvancedFilter> {
   // Filter States
-  double _maxPrice = 200.0;
+  double _maxPrice = 500.0;
   String _selectedSeats = 'Any';
   bool _ecoFriendly = false;
   bool _availableOnly = true;
   bool isFilter = false;
+  String _selectedTransmission = 'Any';
+  String _selectedFuel = 'Any';
+
+  final List<String> _transmissionOptions = ['Any', 'Automatic', 'Manual'];
+  final List<String> _fuelOptions = [
+    'Any',
+    'Petrol',
+    'Diesel',
+    'Electric',
+    'Hybrid',
+  ];
 
   @override
   Widget build(BuildContext context) {
@@ -40,11 +56,36 @@ class _AdvancedFilterState extends State<AdvancedFilter> {
         centerTitle: true,
       ),
       body: isFilter
-          ? ListView.builder(
-              padding: const EdgeInsets.all(16),
-              itemCount: 3, // For demo purposes
-              itemBuilder: (context, index) {
-                return _buildCarCard();
+          ? Consumer<CustomerProvider>(
+              builder: (context, provider, child) {
+                final carList = provider.carsSearch.results ?? [];
+
+                if (carList.isEmpty) {
+                  return const Center(
+                    child: Text("No cars match your criteria."),
+                  );
+                }
+
+                return ListView.builder(
+                  padding: const EdgeInsets.all(16),
+                  itemCount: carList.length,
+                  itemBuilder: (context, index) {
+                    final car = carList[index];
+                    return CarCard(
+                      image: car.featuredImageUrl == null
+                          ? ""
+                          : car.featuredImageUrl.toString(),
+                      name: car.carName.toString(),
+                      type: car.category!,
+                      price: car.pricePerDay!,
+                      seats: car.seats!.toString(),
+                      gear: car.transmission!,
+                      door: car.doors!,
+                      engineType: car.fuelType!,
+                    );
+                    ; // Update this helper to accept Car data
+                  },
+                );
               },
             )
           : SingleChildScrollView(
@@ -77,7 +118,7 @@ class _AdvancedFilterState extends State<AdvancedFilter> {
                         ),
                         Slider(
                           value: _maxPrice,
-                          max: 200,
+                          max: 500,
                           divisions: 20,
                           activeColor: Colors.blue,
                           onChanged: (val) => setState(() => _maxPrice = val),
@@ -96,12 +137,17 @@ class _AdvancedFilterState extends State<AdvancedFilter> {
                         Wrap(
                           spacing: 10,
                           runSpacing: 10,
-                          children: ['Any', '4 seats', '5 seats', '7 seats']
-                              .map((label) {
+                          children:
+                              [
+                                'Any',
+                                '4 seats',
+                                '5 seats',
+                                '7 seats',
+                                "9 Seats",
+                              ].map((label) {
                                 bool isSelected = _selectedSeats == label;
                                 return _buildChoiceChip(label, isSelected);
-                              })
-                              .toList(),
+                              }).toList(),
                         ),
                       ],
                     ),
@@ -109,9 +155,24 @@ class _AdvancedFilterState extends State<AdvancedFilter> {
 
                   // --- Dropdown Sections ---
                   _buildFilterCard(
-                    child: _buildDropdownField('Transmission Type'),
+                    child: _buildFilterCard(
+                      child: _buildDropdownField(
+                        label: 'Transmission Type',
+                        value: _selectedTransmission,
+                        items: _transmissionOptions,
+                        onChanged: (val) =>
+                            setState(() => _selectedTransmission = val!),
+                      ),
+                    ),
                   ),
-                  _buildFilterCard(child: _buildDropdownField('Fuel Type')),
+                  _buildFilterCard(
+                    child: _buildDropdownField(
+                      label: 'Fuel Type',
+                      value: _selectedFuel,
+                      items: _fuelOptions,
+                      onChanged: (val) => setState(() => _selectedFuel = val!),
+                    ),
+                  ),
 
                   // --- Toggle Section ---
                   _buildFilterCard(
@@ -152,10 +213,31 @@ class _AdvancedFilterState extends State<AdvancedFilter> {
                       ],
                     ),
                     child: ElevatedButton(
-                      onPressed: () {
+                      onPressed: () async {
                         setState(() {
                           isFilter = true;
                         });
+
+                        CustomLoading.show(context);
+
+                        final provider = context.read<CustomerProvider>();
+
+                        await provider.fetchFilteredCars(
+                          category: "", // Ensure you have this variable
+                          transmission:
+                              _selectedTransmission, // Ensure you have this variable
+                          minPrice: 0,
+                          maxPrice: _maxPrice,
+                          seats: _selectedSeats,
+                        );
+
+                        if (context.mounted) {
+                          CustomLoading.hide(context);
+                          setState(() {
+                            isFilter =
+                                true; // Switch view to show the results list
+                          });
+                        }
                       },
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.transparent,
@@ -241,7 +323,12 @@ class _AdvancedFilterState extends State<AdvancedFilter> {
     );
   }
 
-  Widget _buildDropdownField(String label) {
+  Widget _buildDropdownField({
+    required String label,
+    required String value,
+    required List<String> items,
+    required ValueChanged<String?> onChanged,
+  }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -251,20 +338,22 @@ class _AdvancedFilterState extends State<AdvancedFilter> {
         ),
         const SizedBox(height: 8),
         Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+          padding: const EdgeInsets.symmetric(horizontal: 12),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(12),
             border: Border.all(color: Colors.grey.shade200),
           ),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                'Select $label',
-                style: TextStyle(color: Colors.grey.shade400),
-              ),
-              const Icon(Icons.keyboard_arrow_down, color: Colors.grey),
-            ],
+          child: DropdownButtonHideUnderline(
+            child: DropdownButton<String>(
+              value: value,
+              isExpanded: true,
+              icon: const Icon(Icons.keyboard_arrow_down, color: Colors.grey),
+              style: const TextStyle(color: Colors.black87, fontSize: 14),
+              items: items.map((String item) {
+                return DropdownMenuItem<String>(value: item, child: Text(item));
+              }).toList(),
+              onChanged: onChanged,
+            ),
           ),
         ),
       ],
@@ -287,7 +376,8 @@ class _AdvancedFilterState extends State<AdvancedFilter> {
     );
   }
 
-  Widget _buildCarCard() {
+  Widget _buildCarCard(Results car) {
+    // Replace 'dynamic' with your 'Result' or 'Car' model class
     return Container(
       margin: const EdgeInsets.only(bottom: 20),
       decoration: BoxDecoration(
@@ -304,7 +394,7 @@ class _AdvancedFilterState extends State<AdvancedFilter> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // --- Car Image with "Available" Badge ---
+          // --- Car Image with Status Badge ---
           Stack(
             children: [
               ClipRRect(
@@ -312,37 +402,19 @@ class _AdvancedFilterState extends State<AdvancedFilter> {
                   top: Radius.circular(16),
                 ),
                 child: Image.network(
-                  'https://images.unsplash.com/photo-1555215695-3004980ad54e',
+                  car.featuredImageUrl ??
+                      'https://via.placeholder.com/400x200', // Dynamic Image
                   height: 180,
                   width: double.infinity,
                   fit: BoxFit.cover,
-                ),
-              ),
-              Positioned(
-                top: 12,
-                right: 12,
-                child: Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 10,
-                    vertical: 4,
-                  ),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFE8F5E9),
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: Row(
-                    children: [
-                      const Icon(Icons.circle, size: 8, color: Colors.green),
-                      const SizedBox(width: 4),
-                      const Text(
-                        'Available',
-                        style: TextStyle(
-                          color: Colors.green,
-                          fontSize: 10,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ],
+                  errorBuilder: (context, error, stackTrace) => Container(
+                    height: 180,
+                    color: Colors.grey.shade200,
+                    child: const Icon(
+                      Icons.directions_car,
+                      size: 50,
+                      color: Colors.grey,
+                    ),
                   ),
                 ),
               ),
@@ -354,15 +426,19 @@ class _AdvancedFilterState extends State<AdvancedFilter> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // --- Car Name and Type Badge ---
+                // --- Car Name and Category Badge ---
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    const Text(
-                      'Tesla Model 3',
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
+                    Expanded(
+                      child: Text(
+                        car.carName ?? 'Unnamed Car',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
                     ),
                     Container(
@@ -374,9 +450,9 @@ class _AdvancedFilterState extends State<AdvancedFilter> {
                         color: const Color(0xFFFCE4EC),
                         borderRadius: BorderRadius.circular(8),
                       ),
-                      child: const Text(
-                        'Economy',
-                        style: TextStyle(
+                      child: Text(
+                        car.category ?? 'General',
+                        style: const TextStyle(
                           color: Colors.pinkAccent,
                           fontSize: 10,
                           fontWeight: FontWeight.bold,
@@ -391,16 +467,16 @@ class _AdvancedFilterState extends State<AdvancedFilter> {
                 Row(
                   children: [
                     const Icon(Icons.star, size: 16, color: Colors.orange),
-                    const Text(
-                      ' 4.8',
-                      style: TextStyle(fontWeight: FontWeight.bold),
+                    Text(
+                      ' ${car.averageRating ?? "0.0"}', // Dynamic Rating
+                      style: const TextStyle(fontWeight: FontWeight.bold),
                     ),
                   ],
                 ),
                 const SizedBox(height: 4),
-                const Text(
-                  '5 seats • Automatic',
-                  style: TextStyle(color: Colors.grey),
+                Text(
+                  '${car.seats ?? "0"} seats • ${car.transmission ?? "N/A"}', // Dynamic Specs
+                  style: const TextStyle(color: Colors.grey),
                 ),
 
                 // --- Price and Request Button ---
@@ -409,24 +485,24 @@ class _AdvancedFilterState extends State<AdvancedFilter> {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     RichText(
-                      text: const TextSpan(
+                      text: TextSpan(
                         children: [
                           TextSpan(
-                            text: '\$89',
-                            style: TextStyle(
+                            text: '\$${car.pricePerDay ?? "0"}',
+                            style: const TextStyle(
                               color: Colors.blue,
                               fontSize: 20,
                               fontWeight: FontWeight.bold,
                             ),
                           ),
-                          TextSpan(
+                          const TextSpan(
                             text: '/day',
                             style: TextStyle(color: Colors.grey, fontSize: 14),
                           ),
                         ],
                       ),
                     ),
-                    _buildRequestButton(),
+                    _buildRequestButton(car.id), // Pass ID for the request
                   ],
                 ),
               ],
@@ -437,18 +513,24 @@ class _AdvancedFilterState extends State<AdvancedFilter> {
     );
   }
 
-  Widget _buildRequestButton() {
+  Widget _buildRequestButton(int? carId) {
     return Container(
       height: 40,
-      width: 140,
+      width: 120,
       decoration: BoxDecoration(
         gradient: const LinearGradient(
-          colors: [Color(0xFF64B5F6), Color(0xFF3F51B5)],
+          colors: [
+            Color(0xFFF857A6),
+            Color(0xFFE91E63),
+          ], // Matching your main pink theme
         ),
         borderRadius: BorderRadius.circular(20),
       ),
       child: ElevatedButton(
-        onPressed: () {},
+        onPressed: () {
+          // Handle booking request for this carId
+          print("Requesting car ID: $carId");
+        },
         style: ElevatedButton.styleFrom(
           backgroundColor: Colors.transparent,
           shadowColor: Colors.transparent,

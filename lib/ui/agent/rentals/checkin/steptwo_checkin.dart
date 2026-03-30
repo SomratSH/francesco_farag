@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
+import 'package:francesco_farag/ui/agent/agent_provider.dart';
+import 'package:provider/provider.dart';
 import 'package:francesco_farag/routing/app_route.dart';
-import 'package:francesco_farag/ui/agent/rentals/checkin/stepone_checkin.dart';
-import 'package:go_router/go_router.dart'; // For the iOS-style switch
+import 'package:francesco_farag/ui/agent/rentals/checkin/stepone_checkin.dart'; // For StepperWidget
+import 'package:go_router/go_router.dart';
 
 class SteptwoCheckin extends StatefulWidget {
   const SteptwoCheckin({super.key});
@@ -12,10 +14,53 @@ class SteptwoCheckin extends StatefulWidget {
 }
 
 class _SteptwoCheckinState extends State<SteptwoCheckin> {
-  bool _isBillingSame = true;
+  // 1. Define Controllers to manage text lifecycle
+  late TextEditingController _nameController;
+  late TextEditingController _dobController;
+  late TextEditingController _nationalityController;
+  late TextEditingController _addressController;
+  late TextEditingController _licenseController;
+  late TextEditingController _licenseExpiryController;
+  late TextEditingController _idController;
+  late TextEditingController _idExpiryController;
+
+  @override
+  void initState() {
+    super.initState();
+    // 2. Initialize controllers with current values from Provider
+    final data = context.read<AgentProvider>().checkInData;
+
+    _nameController = TextEditingController(text: data['fullName']);
+    _dobController = TextEditingController(text: data['dob']);
+    _nationalityController = TextEditingController(text: data['nationality']);
+    _addressController = TextEditingController(text: data['address']);
+    _licenseController = TextEditingController(text: data['licenseNumber']);
+    _licenseExpiryController = TextEditingController(
+      text: data['licenseExpiry'],
+    );
+    _idController = TextEditingController(text: data['idNumber']);
+    _idExpiryController = TextEditingController(text: data['idExpiry']);
+  }
+
+  @override
+  void dispose() {
+    // 3. Clean up controllers
+    _nameController.dispose();
+    _dobController.dispose();
+    _nationalityController.dispose();
+    _addressController.dispose();
+    _licenseController.dispose();
+    _licenseExpiryController.dispose();
+    _idController.dispose();
+    _idExpiryController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
+    final provider = context.watch<AgentProvider>();
+    final data = provider.checkInData;
+
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
@@ -23,7 +68,7 @@ class _SteptwoCheckinState extends State<SteptwoCheckin> {
         elevation: 0,
         leading: InkWell(
           onTap: () => context.pop(),
-          child: Icon(Icons.arrow_back, color: Colors.black),
+          child: const Icon(Icons.arrow_back, color: Colors.black),
         ),
         title: const Text(
           'Check-in',
@@ -47,12 +92,11 @@ class _SteptwoCheckinState extends State<SteptwoCheckin> {
             ),
             const SizedBox(height: 20),
 
-            // 1. Progress Stepper (Updated to Step 2)
             const StepperWidget(currentStep: 2),
 
             const SizedBox(height: 24),
 
-            // 2. Billing Address Toggle Card
+            // Billing Address Toggle
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
               decoration: BoxDecoration(
@@ -83,9 +127,11 @@ class _SteptwoCheckinState extends State<SteptwoCheckin> {
                     ),
                   ),
                   CupertinoSwitch(
-                    value: _isBillingSame,
+                    value: data['billingSameAsCustomer'],
                     activeColor: const Color(0xFF2962FF),
-                    onChanged: (val) => setState(() => _isBillingSame = val),
+                    onChanged: (val) {
+                      provider.updateCheckInField('billingSameAsCustomer', val);
+                    },
                   ),
                 ],
               ),
@@ -93,32 +139,73 @@ class _SteptwoCheckinState extends State<SteptwoCheckin> {
 
             const SizedBox(height: 20),
 
-            // 3. Customer Form Fields
-            _buildInputField("Full Name", "Enter full name"),
-            _buildInputField("Date of Birth", "mm/dd/yyyy"),
-            _buildInputField("Nationality", "Enter nationality"),
-            _buildInputField("Address", "Enter address"),
+            // Input Fields synced with Provider
+            _buildInputField("Full Name", "Enter full name", _nameController, (
+              val,
+            ) {
+              provider.updateCheckInField('fullName', val);
+            }),
+            _buildInputField("Date of Birth", "mm/dd/yyyy", _dobController, (
+              val,
+            ) {
+              provider.updateCheckInField('dob', val);
+            }),
+            _buildInputField(
+              "Nationality",
+              "Enter nationality",
+              _nationalityController,
+              (val) {
+                provider.updateCheckInField('nationality', val);
+              },
+            ),
+            _buildInputField("Address", "Enter address", _addressController, (
+              val,
+            ) {
+              provider.updateCheckInField('address', val);
+            }),
             _buildInputField(
               "Driving Licenses Number",
               "Enter licenses number",
+              _licenseController,
+              (val) {
+                provider.updateCheckInField('licenseNumber', val);
+              },
             ),
             _buildInputField(
               "Licenses Expiry Date",
-              "Enter licenses expiry date",
+              "Enter date",
+              _licenseExpiryController,
+              (val) {
+                provider.updateCheckInField('licenseExpiry', val);
+              },
             ),
-            _buildInputField("ID/Passport Number", "Enter id/passport number"),
-            _buildInputField("ID Expiry Date", "Enter ID expiry date"),
+            _buildInputField(
+              "ID/Passport Number",
+              "Enter number",
+              _idController,
+              (val) {
+                provider.updateCheckInField('idNumber', val);
+              },
+            ),
+            _buildInputField(
+              "ID Expiry Date",
+              "Enter date",
+              _idExpiryController,
+              (val) {
+                provider.updateCheckInField('idExpiry', val);
+              },
+            ),
 
             const SizedBox(height: 24),
 
-            // 4. Navigation Buttons
+            // Navigation Buttons
             Row(
               children: [
                 Expanded(
                   child: OutlinedButton(
-                    onPressed: () => Navigator.pop(context),
+                    onPressed: () => context.pop(),
                     style: OutlinedButton.styleFrom(
-                      padding: EdgeInsets.symmetric(vertical: 15),
+                      padding: const EdgeInsets.symmetric(vertical: 15),
                       side: BorderSide(color: Colors.grey.shade200),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(30),
@@ -140,9 +227,7 @@ class _SteptwoCheckinState extends State<SteptwoCheckin> {
                       borderRadius: BorderRadius.circular(30),
                     ),
                     child: ElevatedButton(
-                      onPressed: () {
-                        context.push(AppRoute.checkingThreeStep);
-                      },
+                      onPressed: () => context.push(AppRoute.checkingThreeStep),
                       style: ElevatedButton.styleFrom(
                         padding: const EdgeInsets.symmetric(vertical: 15),
                         backgroundColor: Colors.transparent,
@@ -170,7 +255,12 @@ class _SteptwoCheckinState extends State<SteptwoCheckin> {
     );
   }
 
-  Widget _buildInputField(String label, String hint) {
+  Widget _buildInputField(
+    String label,
+    String hint,
+    TextEditingController controller,
+    Function(String) onChanged,
+  ) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 16.0),
       child: Column(
@@ -182,6 +272,9 @@ class _SteptwoCheckinState extends State<SteptwoCheckin> {
           ),
           const SizedBox(height: 8),
           TextField(
+            controller: controller,
+            onChanged: onChanged, // Save to provider on every change
+            style: const TextStyle(fontSize: 14),
             decoration: InputDecoration(
               hintText: hint,
               hintStyle: TextStyle(color: Colors.grey.shade400, fontSize: 14),
@@ -197,6 +290,10 @@ class _SteptwoCheckinState extends State<SteptwoCheckin> {
                 borderRadius: BorderRadius.circular(30),
                 borderSide: BorderSide(color: Colors.grey.shade200),
               ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(30),
+                borderSide: const BorderSide(color: Color(0xFF2962FF)),
+              ),
             ),
           ),
         ],
@@ -204,5 +301,3 @@ class _SteptwoCheckinState extends State<SteptwoCheckin> {
     );
   }
 }
-
-// Ensure the StepperWidget from Step 1 is available here

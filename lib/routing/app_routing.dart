@@ -3,6 +3,7 @@ import 'package:francesco_farag/ui/agent/home/home_page.dart';
 import 'package:francesco_farag/ui/agent/landing_page/agent_landing_page.dart';
 import 'package:francesco_farag/ui/agent/messge/chat_page.dart';
 import 'package:francesco_farag/ui/agent/messge/message_page.dart';
+import 'package:francesco_farag/ui/agent/model/checkin_model.dart';
 import 'package:francesco_farag/ui/agent/profile/edit_profile_page.dart';
 import 'package:francesco_farag/ui/agent/profile/profile_page.dart';
 import 'package:francesco_farag/ui/agent/rentals/booking_details.dart';
@@ -31,8 +32,10 @@ import 'package:francesco_farag/ui/authentication/welcome_screen.dart';
 import 'package:francesco_farag/ui/customer/home/advanced_filter.dart';
 import 'package:francesco_farag/ui/customer/home/all_cars_customer_page.dart';
 import 'package:francesco_farag/ui/customer/home/car_details_page.dart';
+import 'package:francesco_farag/ui/customer/home/car_search_page.dart';
 import 'package:francesco_farag/ui/customer/home/customer_request_quatation.dart';
 import 'package:francesco_farag/ui/customer/home/driver_liencse_page.dart';
+import 'package:francesco_farag/ui/customer/home/fine_invoice_page.dart';
 import 'package:francesco_farag/ui/customer/home/home_customer.dart';
 import 'package:francesco_farag/ui/customer/landing_customer/landing_customer.dart';
 import 'package:francesco_farag/ui/customer/message_customer/customer_chat.dart';
@@ -40,6 +43,7 @@ import 'package:francesco_farag/ui/customer/message_customer/message_customer.da
 import 'package:francesco_farag/ui/customer/model/rental_model.dart';
 import 'package:francesco_farag/ui/customer/profile_customer/edit_profile_customer.dart';
 import 'package:francesco_farag/ui/customer/profile_customer/profile_customer.dart';
+import 'package:francesco_farag/ui/customer/rentals_customers/booking_status_page.dart';
 import 'package:francesco_farag/ui/customer/rentals_customers/renstals_assignment.dart';
 import 'package:francesco_farag/ui/customer/rentals_customers/rentals_customer.dart';
 import 'package:go_router/go_router.dart';
@@ -47,15 +51,15 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 class AppRouting {
   static Future<GoRouter> createRouter() async {
-    final prefs = await SharedPreferences.getInstance();
-    final token = prefs.getString('authToken');
-    final role = prefs.getString('role');
+    // final prefs = await SharedPreferences.getInstance();
+    // final token = prefs.getString('authToken');
+    // final role = prefs.getString('role');
 
-        final inital = (token != null && token.isNotEmpty)
-        ? (role == 'customer' ? AppRoute.homeCustomer : AppRoute.home)
-        : AppRoute.splash;
+    // final inital = (token != null && token.isNotEmpty)
+    //     ? (role == 'customer' ? AppRoute.homeCustomer : AppRoute.home)
+    //     : AppRoute.splash;
     return GoRouter(
-      initialLocation: inital,
+      initialLocation: AppRoute.splash,
       debugLogDiagnostics: true,
       routes: [
         GoRoute(
@@ -170,7 +174,10 @@ class AppRouting {
         GoRoute(
           path: AppRoute.checkinFirstStep,
           name: 'checkin-first-step',
-          builder: (context, state) => const SteponeCheckin(),
+          builder: (context, state) {
+            final data = state.extra as Booking;
+            return SteponeCheckin(booking: data);
+          },
         ),
         GoRoute(
           path: AppRoute.checkinSecondStep,
@@ -201,6 +208,12 @@ class AppRouting {
           path: AppRoute.bookingDetails,
           name: 'booking-details',
           builder: (context, state) => const BookingDetailsScreen(),
+        ),
+
+        GoRoute(
+          path: AppRoute.carSearch,
+          name: 'car-search',
+          builder: (context, state) => const CarSearchListPage(),
         ),
         //customer shell
         ShellRoute(
@@ -258,14 +271,27 @@ class AppRouting {
           path: AppRoute.rentalsAssingment,
           name: 'rentals-assingment',
           builder: (context, state) {
-    final rental = state.extra as RentalRequest; // Cast the extra data
-    return RentalAssignmentScreen(rental: rental);
-  },
+            final rental = state.extra as RentalRequest; // Cast the extra data
+            return RentalAssignmentScreen(rental: rental);
+          },
         ),
         GoRoute(
           path: AppRoute.advancedFilter,
           name: 'advanced-filter',
           builder: (context, state) => const AdvancedFilter(),
+        ),
+        GoRoute(
+          path: AppRoute.fineInvoice,
+          name: 'fine-invoice',
+          builder: (context, state) => const FineInvoicePage(),
+        ),
+        GoRoute(
+          path: AppRoute.rentalRequestDetails,
+          name: 'rental-request',
+          builder: (context, state) {
+            final data = state.extra as RentalRequest;
+            return BookingStatusPage(request: data);
+          },
         ),
       ],
     );

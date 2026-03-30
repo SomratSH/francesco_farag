@@ -1,5 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:francesco_farag/constant/app_urls.dart';
 import 'package:francesco_farag/routing/app_route.dart';
+import 'package:francesco_farag/ui/agent/agent_provider.dart';
+import 'package:francesco_farag/ui/agent/model/checkin_model.dart';
+import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
 
 class CheckInOutScreen extends StatefulWidget {
@@ -10,51 +14,34 @@ class CheckInOutScreen extends StatefulWidget {
 }
 
 class _CheckInOutScreenState extends State<CheckInOutScreen> {
-  // 1. Track the current filter state
-  String _currentFilter = "All";
+  String _currentTab = "checkin"; // Values: "checkin" or "checkout"
 
-  // 2. Mock Data List
-  final List<Map<String, dynamic>> _allBookings = [
-    {
-      "name": "John Doe",
-      "status": "Pending Check-in",
-      "type": "Check-in", // Category for filtering
-      "color": Colors.blue,
-      "button": "Check-in",
-      "icon": true,
-    },
-    {
-      "name": "John Smith",
-      "status": "Active",
-      "type": "Check-in", // Usually counts as check-in data
-      "color": Colors.green,
-      "button": "View Details",
-      "icon": false,
-    },
-    {
-      "name": "Mike Johnson",
-      "status": "Pending Checkout",
-      "type": "Checkout", // Category for filtering
-      "color": Colors.orange,
-      "button": "Check-Out",
-      "icon": true,
-    },
-  ];
+  @override
+  void initState() {
+    super.initState();
+    _fetchData();
+  }
+
+  void _fetchData() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      context.read<AgentProvider>().getCheckInBookings(_currentTab);
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
-    // 3. Filter the list based on selection
-    final filteredBookings = _allBookings.where((booking) {
-      if (_currentFilter == "All") return true;
-      return booking['type'] == _currentFilter;
-    }).toList();
+    final provider = context.watch<AgentProvider>();
+    final bookings = provider.checkInModel?.bookings ?? [];
 
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
         backgroundColor: Colors.white,
         elevation: 0,
-        leading: const Icon(Icons.arrow_back, color: Colors.black),
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back, color: Colors.black),
+          onPressed: () => context.pop(),
+        ),
         title: const Text(
           'Check-in & Checkout',
           style: TextStyle(color: Colors.black),
@@ -67,13 +54,12 @@ class _CheckInOutScreenState extends State<CheckInOutScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const SizedBox(height: 10),
-            // 4. Tab Row with GestureDetector
+            // Custom Tab Row
             Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                _buildFilterTab("All"),
-                _buildFilterTab("Check-in"),
-                _buildFilterTab("Checkout"),
+                Expanded(child: _buildTab("Check-in", "checkin")),
+                const SizedBox(width: 12),
+                Expanded(child: _buildTab("Checkout", "checkout")),
               ],
             ),
             const SizedBox(height: 24),
@@ -86,21 +72,18 @@ class _CheckInOutScreenState extends State<CheckInOutScreen> {
               style: TextStyle(color: Colors.grey),
             ),
             const SizedBox(height: 16),
-            // 5. Dynamic List
             Expanded(
-              child: ListView.builder(
-                itemCount: filteredBookings.length,
-                itemBuilder: (context, index) {
-                  final item = filteredBookings[index];
-                  return BookingCard(
-                    name: item['name'],
-                    status: item['status'],
-                    statusColor: item['color'],
-                    buttonText: item['button'],
-                    hasIcon: item['icon'],
-                  );
-                },
-              ),
+              child: provider.isLoading
+                  ? const Center(child: CircularProgressIndicator())
+                  : bookings.isEmpty
+                  ? const Center(child: Text("No bookings available"))
+                  : ListView.builder(
+                      itemCount: bookings.length,
+                      itemBuilder: (context, index) => BookingCard(
+                        booking: bookings[index],
+                        type: _currentTab,
+                      ),
+                    ),
             ),
           ],
         ),
@@ -108,17 +91,16 @@ class _CheckInOutScreenState extends State<CheckInOutScreen> {
     );
   }
 
-  // Helper to build tabs and handle clicks
-  Widget _buildFilterTab(String label) {
-    bool isActive = _currentFilter == label;
+  Widget _buildTab(String label, String value) {
+    bool isActive = _currentTab == value;
     return GestureDetector(
       onTap: () {
-        setState(() {
-          _currentFilter = label; // Update state and rebuild
-        });
+        setState(() => _currentTab = value);
+        _fetchData();
       },
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 12),
+        alignment: Alignment.center,
+        padding: const EdgeInsets.symmetric(vertical: 14),
         decoration: BoxDecoration(
           gradient: isActive
               ? const LinearGradient(
@@ -126,14 +108,14 @@ class _CheckInOutScreenState extends State<CheckInOutScreen> {
                 )
               : null,
           color: isActive ? null : Colors.white,
-          borderRadius: BorderRadius.circular(25),
+          borderRadius: BorderRadius.circular(30),
           border: isActive ? null : Border.all(color: Colors.grey.shade200),
         ),
         child: Text(
           label,
           style: TextStyle(
             color: isActive ? Colors.white : Colors.grey,
-            fontWeight: FontWeight.w600,
+            fontWeight: FontWeight.bold,
           ),
         ),
       ),
@@ -141,31 +123,25 @@ class _CheckInOutScreenState extends State<CheckInOutScreen> {
   }
 }
 
-// Reusable Card Widget (Same as before but cleaned up)
 class BookingCard extends StatelessWidget {
-  final String name;
-  final String status;
-  final Color statusColor;
-  final String buttonText;
-  final bool hasIcon;
+  final Booking booking;
+  final String type;
 
-  const BookingCard({
-    super.key,
-    required this.name,
-    required this.status,
-    required this.statusColor,
-    required this.buttonText,
-    required this.hasIcon,
-  });
+  const BookingCard({super.key, required this.booking, required this.type});
 
   @override
   Widget build(BuildContext context) {
+    bool isCheckIn = type == "checkin";
+    Color statusColor = isCheckIn
+        ? const Color(0xFF2196F3)
+        : const Color(0xFFFF6D00);
+
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(20),
         border: Border.all(color: Colors.grey.shade100),
         boxShadow: [
           BoxShadow(color: Colors.black.withOpacity(0.03), blurRadius: 10),
@@ -177,79 +153,82 @@ class BookingCard extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(
-                name,
-                style: const TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
+              Expanded(
+                child: Text(
+                  booking.customer?.fullName ?? "N/A",
+                  style: const TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                  ),
+                  overflow: TextOverflow.ellipsis,
                 ),
               ),
               Container(
                 padding: const EdgeInsets.symmetric(
-                  horizontal: 10,
-                  vertical: 4,
+                  horizontal: 14,
+                  vertical: 8,
                 ),
                 decoration: BoxDecoration(
                   color: statusColor,
-                  borderRadius: BorderRadius.circular(8),
+                  borderRadius: BorderRadius.circular(20),
                 ),
                 child: Text(
-                  status,
-                  style: const TextStyle(color: Colors.white, fontSize: 11),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          const Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              _DetailItem(label: "Booking ID", value: "BK001"),
-              _DetailItem(
-                label: "Car",
-                value: "Toyota Camry",
-                crossAlign: CrossAxisAlignment.end,
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-          InkWell(
-            onTap: () {
-              if (status.toLowerCase() == "pending check-in") {
-                context.push(AppRoute.checkinFirstStep);
-              } else if (status.toLowerCase() == "pending checkout") {
-                context.push(AppRoute.checkoutProgess);
-              } else if (status.toLowerCase() == "active") {
-                context.push(AppRoute.bookingDetails);
-              }
-            },
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-              decoration: BoxDecoration(
-                gradient: const LinearGradient(
-                  colors: [Color(0xFF64B5F6), Color(0xFF3F51B5)],
-                ),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  if (hasIcon)
-                    const Icon(
-                      Icons.check_circle_outline,
-                      color: Colors.white,
-                      size: 16,
-                    ),
-                  if (hasIcon) const SizedBox(width: 8),
-                  Text(
-                    buttonText,
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.bold,
-                    ),
+                  isCheckIn ? "Pending Check-in" : "Pending Checkout",
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
                   ),
-                ],
+                ),
               ),
+            ],
+          ),
+          const SizedBox(height: 20),
+          Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _RichDetail(label: "Booking ID", value: "BK${booking.id}"),
+                    const SizedBox(height: 8),
+                    _RichDetail(
+                      label: "Plate",
+                      value: booking.id.toString() ?? "N/A",
+                    ),
+                  ],
+                ),
+              ),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _RichDetail(label: "Car", value: booking.vehicle ?? "N/A"),
+                    const SizedBox(height: 8),
+                    _RichDetail(
+                      label: "Period",
+                      value: "${booking.pickupDate} to ${booking.returnDate}",
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 20),
+          ElevatedButton.icon(
+            onPressed: () => context.push(
+              isCheckIn ? AppRoute.checkinFirstStep : AppRoute.checkinout,
+              extra: isCheckIn ? booking : null,
+            ),
+            icon: const Icon(Icons.assignment_turned_in_outlined, size: 18),
+            label: Text(isCheckIn ? "Check-in" : "Check-Out"),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF3F51B5),
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(25),
+              ),
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
             ),
           ),
         ],
@@ -258,27 +237,26 @@ class BookingCard extends StatelessWidget {
   }
 }
 
-class _DetailItem extends StatelessWidget {
-  final String label;
-  final String value;
-  final CrossAxisAlignment crossAlign;
-  const _DetailItem({
-    required this.label,
-    required this.value,
-    this.crossAlign = CrossAxisAlignment.start,
-  });
+class _RichDetail extends StatelessWidget {
+  final String label, value;
+  const _RichDetail({required this.label, required this.value});
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: crossAlign,
-      children: [
-        Text(label, style: const TextStyle(color: Colors.grey, fontSize: 12)),
-        Text(
-          value,
-          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
-        ),
-      ],
+    return RichText(
+      text: TextSpan(
+        style: const TextStyle(fontSize: 13, color: Colors.grey),
+        children: [
+          TextSpan(text: "$label: "),
+          TextSpan(
+            text: value,
+            style: const TextStyle(
+              color: Colors.black,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:francesco_farag/utils/custom_snackbar.dart';
 import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
@@ -240,28 +241,81 @@ class _CreateQuotationScreenState extends State<CreateQuotationScreen> {
               ),
             ),
             const SizedBox(height: 12),
-            Container(
-              width: double.infinity,
-              height: 50,
-              decoration: BoxDecoration(
-                gradient: const LinearGradient(
-                  colors: [Color(0xFF64B5F6), Color(0xFF3949AB)],
-                ),
-                borderRadius: BorderRadius.circular(25),
-              ),
-              child: ElevatedButton.icon(
-                onPressed: () {},
-                icon: const Icon(Icons.send_outlined, color: Colors.white),
-                label: const Text(
-                  'Send to Client',
-                  style: TextStyle(color: Colors.white),
-                ),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.transparent,
-                  shadowColor: Colors.transparent,
-                ),
-              ),
-            ),
+            data.status != "pending"
+                ? Container(
+                    width: double.infinity,
+                    height: 50,
+                    decoration: BoxDecoration(
+                      color: Colors.grey,
+                      borderRadius: BorderRadius.circular(25),
+                    ),
+                    child: ElevatedButton.icon(
+                      onPressed: () async {
+                        AppSnackbar.show(
+                          context,
+                          title: "Create Quatation",
+                          message: "Already Send to the client",
+                          type: SnackType.success,
+                        );
+                      },
+                      icon: const Icon(
+                        Icons.check_circle_rounded,
+                        color: Colors.green,
+                      ),
+                      label: const Text(
+                        'Already Sent to Client',
+                        style: TextStyle(color: Colors.white),
+                      ),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.transparent,
+                        shadowColor: Colors.transparent,
+                      ),
+                    ),
+                  )
+                : Container(
+                    width: double.infinity,
+                    height: 50,
+                    decoration: BoxDecoration(
+                      gradient: const LinearGradient(
+                        colors: [Color(0xFF64B5F6), Color(0xFF3949AB)],
+                      ),
+                      borderRadius: BorderRadius.circular(25),
+                    ),
+                    child: ElevatedButton.icon(
+                      onPressed: () async {
+                        final response = await provider.sendQuotation(
+                          data.bookingId!,
+                        );
+                        if (response) {
+                          AppSnackbar.show(
+                            context,
+                            title: "",
+                            message: "Qoutatation Send Successfully",
+                            type: SnackType.success,
+                          );
+                        } else {
+                          AppSnackbar.show(
+                            context,
+                            title: "",
+                            message: "Qoutatation Send Not Successfully",
+                            type: SnackType.error,
+                          );
+                        }
+                      },
+                      icon: const Icon(
+                        Icons.send_outlined,
+                        color: Colors.white,
+                      ),
+                      label: const Text(
+                        'Send to Client',
+                        style: TextStyle(color: Colors.white),
+                      ),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.transparent,
+                        shadowColor: Colors.transparent,
+                      ),
+                    ),
+                  ),
           ],
         ),
       ),

@@ -17,6 +17,10 @@ class AppProvider {
         ..fetchRentalList()
         ..fetchCustomerProfile(),
     ),
-    ChangeNotifierProvider(create: (_) => AgentProvider()..fetchDashboard()),
+    ChangeNotifierProvider(
+      create: (_) => AgentProvider()
+        ..fetchDashboard()
+        ..getAgentProfile(),
+    ),
   ];
 }

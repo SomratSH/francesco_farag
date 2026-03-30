@@ -3,7 +3,6 @@ import 'package:francesco_farag/routing/app_route.dart';
 import 'package:francesco_farag/ui/agent/agent_provider.dart';
 import 'package:francesco_farag/ui/agent/model/rental_request_model.dart';
 import 'package:francesco_farag/utils/app_colors.dart';
-import 'package:francesco_farag/utils/custom_loading_dialog.dart';
 import 'package:francesco_farag/utils/custom_snackbar.dart';
 import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
@@ -31,12 +30,15 @@ class _RentalsPageState extends State<RentalsPage> {
     final provider = context.watch<AgentProvider>();
     final model = provider.rentalRequestsModel;
 
-    // Filter list based on selected tab
+    // --- MODIFIED: Filter logic to include awaiting_payment in the Pending tab ---
     final filteredList =
         model?.requests?.where((req) {
           if (selectedStatus == "pending") {
-            return req.status == "pending" || req.status == "quotation_sent";
+            return req.status == "pending" ||
+                req.status == "quotation_sent" ||
+                req.status == "awaiting_payment";
           }
+          // Ensure this matches the status string used in the tabs below
           return req.status == selectedStatus;
         }).toList() ??
         [];
@@ -63,14 +65,17 @@ class _RentalsPageState extends State<RentalsPage> {
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       _buildTab(
-                        'Pending (${model?.counts?.pending ?? 0})',
+                        'Pending (${(model?.counts?.pending ?? 0) + (0)})',
                         isActive: selectedStatus == "pending",
                         onTap: () => setState(() => selectedStatus = "pending"),
                       ),
                       _buildTab(
-                        'Active (${model?.counts?.active ?? 0})',
-                        isActive: selectedStatus == "active",
-                        onTap: () => setState(() => selectedStatus = "active"),
+                        'Approved (${model?.counts?.active ?? 0})',
+                        isActive:
+                            selectedStatus ==
+                            "approved", // Changed from "approved" to match standard status
+                        onTap: () =>
+                            setState(() => selectedStatus = "approved"),
                       ),
                       _buildTab(
                         'Rejected (${model?.counts?.rejected ?? 0})',
@@ -108,7 +113,7 @@ class _RentalsPageState extends State<RentalsPage> {
       onTap: onTap,
       borderRadius: BorderRadius.circular(25),
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
         decoration: BoxDecoration(
           color: isActive ? const Color(0xFF4A80F0) : Colors.white,
           borderRadius: BorderRadius.circular(25),
@@ -120,6 +125,7 @@ class _RentalsPageState extends State<RentalsPage> {
           style: TextStyle(
             color: isActive ? Colors.white : Colors.grey.shade600,
             fontWeight: isActive ? FontWeight.bold : FontWeight.normal,
+            fontSize: 13,
           ),
         ),
       ),
@@ -135,7 +141,6 @@ class BookingCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final provider = context.watch<AgentProvider>();
-    // Correctly reference the status from the request object
     final String currentStatus = request.status ?? "";
 
     return Container(
@@ -146,6 +151,7 @@ class BookingCard extends StatelessWidget {
       ),
       child: Column(
         children: [
+          // Header: Customer Info
           Container(
             padding: const EdgeInsets.all(12),
             decoration: const BoxDecoration(
@@ -183,6 +189,7 @@ class BookingCard extends StatelessWidget {
               ],
             ),
           ),
+          // Car Image
           Padding(
             padding: const EdgeInsets.all(12.0),
             child: ClipRRect(
@@ -288,7 +295,7 @@ class BookingCard extends StatelessWidget {
                   ),
                 const SizedBox(height: 12),
 
-                // --- Updated Button Logic ---
+                // --- MODIFIED: Button Logic for all statuses ---
                 if (currentStatus == "pending" ||
                     currentStatus == "quotation_sent")
                   Row(
@@ -319,14 +326,13 @@ class BookingCard extends StatelessWidget {
                               final response = await provider.getBookingDetails(
                                 request.id!.toString(),
                               );
-
                               if (response) {
                                 context.push(AppRoute.crateQuatation);
                               } else {
                                 AppSnackbar.show(
                                   context,
-                                  title: "Quatation",
-                                  message: "SOmething wrong, try again",
+                                  title: "Quotation",
+                                  message: "Something went wrong, try again",
                                 );
                               }
                             },
@@ -343,6 +349,35 @@ class BookingCard extends StatelessWidget {
                       ),
                     ],
                   )
+                else if (currentStatus == "awaiting_payment")
+                  // Added "Awaiting Payment" visual state
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    decoration: BoxDecoration(
+                      color: Colors.amber.shade50,
+                      borderRadius: BorderRadius.circular(15),
+                      border: Border.all(color: Colors.amber.shade200),
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          Icons.hourglass_top_rounded,
+                          color: Colors.amber.shade700,
+                          size: 18,
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          "Awaiting Customer Payment",
+                          style: TextStyle(
+                            color: Colors.amber.shade800,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ],
+                    ),
+                  )
                 else if (currentStatus == "active")
                   DecoratedBox(
                     decoration: BoxDecoration(
@@ -351,7 +386,7 @@ class BookingCard extends StatelessWidget {
                     ),
                     child: const Center(
                       child: Padding(
-                        padding: EdgeInsets.all(8.0),
+                        padding: EdgeInsets.all(12.0),
                         child: Text(
                           'View Details',
                           style: TextStyle(
@@ -387,6 +422,9 @@ class BookingCard extends StatelessWidget {
     } else if (status == "quotation_sent") {
       color = Colors.blue;
       label = "Quoted";
+    } else if (status == "awaiting_payment") {
+      color = Colors.amber.shade700;
+      label = "Awaiting Payment";
     }
 
     return Container(
@@ -429,5 +467,23 @@ class BookingCard extends StatelessWidget {
         ],
       ),
     );
+  }
+}
+
+class Counts {
+  int? pending;
+  int? active;
+  int? rejected;
+  int?
+  awaitingPayment; // Ensure this matches your API key (e.g., 'awaiting_payment')
+
+  Counts({this.pending, this.active, this.rejected, this.awaitingPayment});
+
+  Counts.fromJson(Map<String, dynamic> json) {
+    pending = json['pending'] ?? 0;
+    active = json['active'] ?? 0;
+    rejected = json['rejected'] ?? 0;
+    // Map the specific payment status count here
+    awaitingPayment = json['awaiting_payment'] ?? json['awaitpayment'] ?? 0;
   }
 }

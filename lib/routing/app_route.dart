@@ -57,4 +57,10 @@ class AppRoute {
 
   static String bookingDetails = "/booking-details";
   static String customerSignUp = "/customer-signup";
+
+  static String carSearch = "/car-search";
+
+  static String fineInvoice = "/fine-invoice";
+
+  static String rentalRequestDetails = "/rental-request-details";
 }

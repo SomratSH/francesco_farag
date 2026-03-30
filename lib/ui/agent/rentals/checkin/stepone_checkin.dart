@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:francesco_farag/routing/app_route.dart';
+import 'package:francesco_farag/ui/agent/model/checkin_model.dart';
 import 'package:go_router/go_router.dart';
 
 class SteponeCheckin extends StatelessWidget {
-  const SteponeCheckin({super.key});
+  final Booking booking; // Add this
+  const SteponeCheckin({super.key, required this.booking});
 
   @override
   Widget build(BuildContext context) {
@@ -12,9 +14,10 @@ class SteponeCheckin extends StatelessWidget {
       appBar: AppBar(
         backgroundColor: Colors.white,
         elevation: 0,
-        leading:  InkWell(
+        leading: InkWell(
           onTap: () => context.pop(),
-          child: Icon(Icons.arrow_back, color: Colors.black)),
+          child: const Icon(Icons.arrow_back, color: Colors.black),
+        ),
         title: const Text(
           'Check-in',
           style: TextStyle(color: Colors.black, fontWeight: FontWeight.w600),
@@ -28,22 +31,18 @@ class SteponeCheckin extends StatelessWidget {
           children: [
             const SizedBox(height: 20),
             const Text(
-              'Booking Summery', // Matching the typo in your image
+              'Booking Summery',
               style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 24),
-
-            // 1. Progress Stepper
             const StepperWidget(currentStep: 1),
-
             const SizedBox(height: 32),
 
-            // 2. Booking Details Card
-            const BookingDetailsCard(),
+            // Pass the booking data to the card
+            BookingDetailsCard(booking: booking),
 
             const Spacer(),
 
-            // 3. Next Step Button
             Container(
               width: double.infinity,
               height: 55,
@@ -56,7 +55,8 @@ class SteponeCheckin extends StatelessWidget {
               ),
               child: ElevatedButton(
                 onPressed: () {
-                  context.push(AppRoute.checkinSecondStep);
+                  // Pass the booking to the next step as well
+                  context.push(AppRoute.checkinSecondStep, extra: booking);
                 },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.transparent,
@@ -127,7 +127,8 @@ class StepperWidget extends StatelessWidget {
 }
 
 class BookingDetailsCard extends StatelessWidget {
-  const BookingDetailsCard({super.key});
+  final Booking booking; // Add this
+  const BookingDetailsCard({super.key, required this.booking});
 
   @override
   Widget build(BuildContext context) {
@@ -153,13 +154,19 @@ class BookingDetailsCard extends StatelessWidget {
             style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 16),
-          _buildDetailRow("Booking ID", "BK-002"),
-          _buildDetailRow("Customer Name", "Sarah Johnson"),
-          _buildDetailRow("Vehicle", "Honda CR-V"),
-          _buildDetailRow("Pickup Date", "2/26/2026 02:00 PM"),
-          _buildDetailRow("Return Date", "3/5/2026"),
-          _buildDetailRow("Location", "Airport Branch"),
-          _buildDetailRow("Assigned Agent", "Agent 001", isLast: true),
+
+          // Dynamic Data from API
+          _buildDetailRow("Booking ID", "BK-${booking.id}"),
+          _buildDetailRow("Customer Name", booking.customer?.fullName ?? "N/A"),
+          _buildDetailRow("Vehicle", booking.vehicle ?? "N/A"),
+          _buildDetailRow("Pickup Date", booking.pickupDate ?? "N/A"),
+          _buildDetailRow("Return Date", booking.returnDate ?? "N/A"),
+          _buildDetailRow("Location", booking.location ?? "N/A"),
+          _buildDetailRow(
+            "Assigned Agent",
+            booking.agent ?? "Not Assigned",
+            isLast: true,
+          ),
         ],
       ),
     );
@@ -177,11 +184,15 @@ class BookingDetailsCard extends StatelessWidget {
                 label,
                 style: const TextStyle(color: Colors.grey, fontSize: 14),
               ),
-              Text(
-                value,
-                style: const TextStyle(
-                  fontWeight: FontWeight.w600,
-                  fontSize: 14,
+              // Added Flexible to prevent overflow on long values
+              Flexible(
+                child: Text(
+                  value,
+                  textAlign: TextAlign.end,
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w600,
+                    fontSize: 14,
+                  ),
                 ),
               ),
             ],

@@ -77,28 +77,21 @@ class HomeCustomer extends StatelessWidget {
                           fontSize: 18,
                         ),
                       ),
-                      const SizedBox(height: 15),
-                      _buildLabel('Pickup Location'),
-                      _buildDropdown('Select agency branches'),
-                      const SizedBox(height: 12),
-                      _buildLabel('Car Type'),
-                      _buildDropdown('Select your car type'),
+                      // const SizedBox(height: 15),
+                      // _buildLabel('Pickup Location'),
+                      // _buildDropdown('Select agency branches'),
+                      // const SizedBox(height: 12),
+                      // _buildLabel('Car Type'),
+                      // _buildDropdown('Select your car type'),
                       const SizedBox(height: 12),
                       Row(
                         children: [
                           Expanded(
                             child: _buildDateTimeBox(
                               'Pickup Date',
-                              'Select Date',
+                              provider.pickupDateStr,
                               Icons.calendar_today,
-                            ),
-                          ),
-                          const SizedBox(width: 10),
-                          Expanded(
-                            child: _buildDateTimeBox(
-                              'Time',
-                              'Select Time',
-                              Icons.access_time,
+                              onTap: () => provider.selectDate(context, true),
                             ),
                           ),
                         ],
@@ -109,22 +102,26 @@ class HomeCustomer extends StatelessWidget {
                           Expanded(
                             child: _buildDateTimeBox(
                               'Return Date',
-                              'Select Date',
+                              provider.returnDateStr,
                               Icons.calendar_today,
-                            ),
-                          ),
-                          const SizedBox(width: 10),
-                          Expanded(
-                            child: _buildDateTimeBox(
-                              'Time',
-                              'Select Time',
-                              Icons.access_time,
+                              onTap: () => provider.selectDate(context, false),
                             ),
                           ),
                         ],
                       ),
                       const SizedBox(height: 20),
-                      _buildSearchButton(),
+                      _buildSearchButton(
+                        onTap: () async {
+                          // 1. Show the loader
+                          context.push(AppRoute.carSearch);
+                          // 2. Await the API call
+                          await provider.fetchSearchCars(
+                            pickupDate: provider.pickupDateStr,
+                            returnDate: provider.returnDateStr,
+                            context: context,
+                          );
+                        },
+                      ),
                       const SizedBox(height: 10),
                       _buildFilterButton(context),
                     ],
@@ -158,11 +155,14 @@ class HomeCustomer extends StatelessWidget {
                     const Color(0xFFE91E63),
                     true,
                   ),
-                  _buildQuickAccessTile(
-                    'Fines',
-                    Icons.attach_money,
-                    const Color(0xFFE91E63),
-                    true,
+                  InkWell(
+                    onTap: () => context.push(AppRoute.fineInvoice),
+                    child: _buildQuickAccessTile(
+                      'Fines',
+                      Icons.attach_money,
+                      const Color(0xFFE91E63),
+                      true,
+                    ),
                   ),
                   _buildQuickAccessTile(
                     'Messages',
@@ -298,35 +298,43 @@ class HomeCustomer extends StatelessWidget {
     ),
   );
 
-  Widget _buildDateTimeBox(String label, String value, IconData icon) => Column(
-    crossAxisAlignment: CrossAxisAlignment.start,
-    children: [
-      Text(
-        label,
-        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
-      ),
-      const SizedBox(height: 6),
-      Container(
-        padding: const EdgeInsets.all(10),
-        decoration: BoxDecoration(
-          border: Border.all(color: Colors.grey.shade200),
-          borderRadius: BorderRadius.circular(10),
+  Widget _buildDateTimeBox(
+    String label,
+    String value,
+    IconData icon, {
+    VoidCallback? onTap,
+  }) => InkWell(
+    onTap: onTap,
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
         ),
-        child: Row(
-          children: [
-            Icon(icon, size: 16, color: Colors.grey),
-            const SizedBox(width: 8),
-            Text(
-              value,
-              style: const TextStyle(color: Colors.grey, fontSize: 12),
-            ),
-          ],
+        const SizedBox(height: 6),
+        Container(
+          padding: const EdgeInsets.all(10),
+          decoration: BoxDecoration(
+            border: Border.all(color: Colors.grey.shade200),
+            borderRadius: BorderRadius.circular(10),
+          ),
+          child: Row(
+            children: [
+              Icon(icon, size: 16, color: Colors.grey),
+              const SizedBox(width: 8),
+              Text(
+                value,
+                style: const TextStyle(color: Colors.grey, fontSize: 12),
+              ),
+            ],
+          ),
         ),
-      ),
-    ],
+      ],
+    ),
   );
 
-  Widget _buildSearchButton() => Container(
+  Widget _buildSearchButton({VoidCallback? onTap}) => Container(
     width: double.infinity,
     height: 50,
     decoration: BoxDecoration(
@@ -334,9 +342,9 @@ class HomeCustomer extends StatelessWidget {
       borderRadius: BorderRadius.circular(25),
     ),
     child: ElevatedButton.icon(
-      onPressed: () {},
+      onPressed: onTap,
       icon: const Icon(Icons.search, color: Colors.white),
-      label: const Text(
+      label: Text(
         'Search Cars',
         style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
       ),
