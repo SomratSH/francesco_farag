@@ -90,7 +90,7 @@ class StepperWidget extends StatelessWidget {
   Widget build(BuildContext context) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: List.generate(6, (index) {
+      children: List.generate(5, (index) {
         int stepNum = index + 1;
         bool isActive = stepNum == currentStep;
 
@@ -110,7 +110,7 @@ class StepperWidget extends StatelessWidget {
                   ),
                 ),
               ),
-              if (index != 5) // Don't add a line after the last circle
+              if (index != 4) // Don't add a line after the last circle
                 Expanded(
                   child: Container(
                     height: 2,

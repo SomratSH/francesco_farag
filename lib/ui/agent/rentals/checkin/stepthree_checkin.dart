@@ -1,7 +1,14 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:francesco_farag/routing/app_route.dart';
+import 'package:francesco_farag/ui/agent/agent_provider.dart';
 import 'package:francesco_farag/ui/agent/rentals/checkin/stepone_checkin.dart';
 import 'package:go_router/go_router.dart';
+import 'package:provider/provider.dart';
+import 'package:image_picker/image_picker.dart';
+
+// Ensure your AgentProvider is imported
+// import 'package:your_app/providers/agent_provider.dart';
 
 class StepthreeCheckin extends StatefulWidget {
   const StepthreeCheckin({super.key});
@@ -11,16 +18,60 @@ class StepthreeCheckin extends StatefulWidget {
 }
 
 class _StepthreeCheckinState extends State<StepthreeCheckin> {
+  final ImagePicker _picker = ImagePicker();
+
+  Future<void> _pickImage(AgentProvider provider) async {
+    showModalBottomSheet(
+      context: context,
+      builder: (context) => SafeArea(
+        child: Wrap(
+          children: [
+            ListTile(
+              leading: const Icon(Icons.photo_library),
+              title: const Text('Gallery'),
+              onTap: () async {
+                final XFile? image = await _picker.pickImage(
+                  source: ImageSource.gallery,
+                );
+                if (image != null) {
+                  provider.addInspectionPhoto(image.path);
+                }
+                if (mounted) Navigator.pop(context);
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.camera_alt),
+              title: const Text('Camera'),
+              onTap: () async {
+                final XFile? image = await _picker.pickImage(
+                  source: ImageSource.camera,
+                );
+                if (image != null) {
+                  provider.addInspectionPhoto(image.path);
+                }
+                if (mounted) Navigator.pop(context);
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
+    final provider = Provider.of<AgentProvider>(context);
+    final data = provider.customerData;
+
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
         backgroundColor: Colors.white,
         elevation: 0,
-          leading:  InkWell(
+        leading: InkWell(
           onTap: () => context.pop(),
-          child: Icon(Icons.arrow_back, color: Colors.black)),
+          child: const Icon(Icons.arrow_back, color: Colors.black),
+        ),
         title: const Text(
           'Check-in',
           style: TextStyle(color: Colors.black, fontWeight: FontWeight.w600),
@@ -42,21 +93,17 @@ class _StepthreeCheckinState extends State<StepthreeCheckin> {
             ),
             const SizedBox(height: 20),
 
-            // 1. Progress Stepper (Step 3 Active)
             const StepperWidget(currentStep: 3),
             const SizedBox(height: 24),
 
-            // 2. Car Inspection Form Card
-            _buildInspectionForm(),
+            _buildInspectionForm(provider, data),
 
             const SizedBox(height: 24),
 
-            // 3. Vehicle Photo Inspection Card
-            _buildPhotoInspectionSection(),
+            _buildPhotoInspectionSection(provider, data),
 
             const SizedBox(height: 24),
 
-            // 4. Navigation
             Row(
               children: [
                 Expanded(
@@ -77,7 +124,7 @@ class _StepthreeCheckinState extends State<StepthreeCheckin> {
     );
   }
 
-  Widget _buildInspectionForm() {
+  Widget _buildInspectionForm(AgentProvider provider, Map data) {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -99,19 +146,40 @@ class _StepthreeCheckinState extends State<StepthreeCheckin> {
           ),
           const SizedBox(height: 20),
           _buildFieldLabel("Starting Kilometers"),
-          _buildTextField("e.g., 45000"),
+          _buildTextField(
+            "e.g., 45000",
+            data['startingKm'],
+            (val) => provider.updateCustomerField('startingKm', val),
+          ),
           _buildFieldLabel("Fuel Level"),
-          _buildDropdownField("Full"),
+          _buildDropdownField(
+            data['fuelLevel'] ?? "full",
+            ["Empty", "Half", "Full"],
+            (val) => provider.updateCustomerField('fuelLevel', "full"),
+          ),
           _buildFieldLabel("Car Condition"),
-          _buildDropdownField("Good condition"),
+          _buildDropdownField(
+            data['carCondition'] ?? "Good condition",
+            ["Good condition", "Damaged"],
+            (val) => provider.updateCustomerField('carCondition', "good"),
+          ),
           _buildFieldLabel("Inspection Notes"),
-          _buildTextArea("Any damages, scratches, or concerns..."),
+          _buildTextArea(
+            "Any damages...",
+            data['inspectionNotes'],
+            (val) => provider.updateCustomerField('inspectionNotes', val),
+          ),
         ],
       ),
     );
   }
 
-  Widget _buildPhotoInspectionSection() {
+  Widget _buildPhotoInspectionSection(AgentProvider provider, Map data) {
+    // Pull the list from provider
+    final List<String> photos = List<String>.from(
+      data['inspectionPhotos'] ?? [],
+    );
+
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -122,43 +190,99 @@ class _StepthreeCheckinState extends State<StepthreeCheckin> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const Text(
-            'Step 1: Vehicle Inspection',
+            'Vehicle Inspection Photos',
             style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
           ),
           const SizedBox(height: 16),
-          GridView.count(
+          GridView.builder(
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
-            crossAxisCount: 3,
-            mainAxisSpacing: 12,
-            crossAxisSpacing: 12,
-            children: [
-              _buildUploadBox("Front"),
-              _buildUploadBox("Back"),
-              _buildUploadBox("Left"),
-              _buildUploadBox("Right"),
-              _buildUploadBox("Interior"),
-              ClipRRect(
-                borderRadius: BorderRadius.circular(12),
-                child: Image.network(
-                  'https://placeholder.com/car_thumb.png',
-                  fit: BoxFit.cover,
-                  errorBuilder: (c, e, s) =>
-                      Container(color: Colors.grey.shade200),
-                ),
-              ),
-            ],
+            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: 3,
+              mainAxisSpacing: 12,
+              crossAxisSpacing: 12,
+            ),
+            // Number of photos + 1 for the 'Add' button
+            itemCount: photos.length + 1,
+            itemBuilder: (context, index) {
+              if (index == photos.length) {
+                // The "Add" button at the end
+                return _buildUploadBox(
+                  "Add Photo",
+                  null,
+                  () => _pickImage(provider),
+                );
+              }
+
+              // The actual selected picture
+              return _buildUploadBox(
+                "Photo ${index + 1}",
+                photos[index],
+                () => provider.removeInspectionPhoto(index), // Tap to delete
+              );
+            },
           ),
           const SizedBox(height: 20),
-          _buildProgressRow("Starting KM", "12,344 KM", 0.3),
-          const SizedBox(height: 12),
-          _buildProgressRow("Fuel Level", "80%", 0.8),
+          // _buildProgressRow("Starting KM", "12,344 KM", 0.3),
+          // const SizedBox(height: 12),
+          // _buildProgressRow("Fuel Level", "80%", 0.8),
         ],
       ),
     );
   }
 
-  // Helper Widgets
+  Widget _buildUploadBox(String label, String? imagePath, VoidCallback onTap) {
+    return InkWell(
+      onTap: onTap,
+      child: Container(
+        clipBehavior: Clip.antiAlias,
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: Colors.grey.shade200),
+        ),
+        child: imagePath != null
+            ? Stack(
+                fit: StackFit.expand,
+                children: [
+                  Image.file(File(imagePath), fit: BoxFit.cover),
+                  // Small red "X" to show it can be removed
+                  Align(
+                    alignment: Alignment.topRight,
+                    child: Container(
+                      margin: const EdgeInsets.all(4),
+                      padding: const EdgeInsets.all(2),
+                      decoration: const BoxDecoration(
+                        color: Colors.red,
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(
+                        Icons.close,
+                        size: 10,
+                        color: Colors.white,
+                      ),
+                    ),
+                  ),
+                ],
+              )
+            : Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Icon(
+                    Icons.add_a_photo_outlined,
+                    color: Colors.blue,
+                    size: 20,
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    label,
+                    style: const TextStyle(fontSize: 10, color: Colors.grey),
+                  ),
+                ],
+              ),
+      ),
+    );
+  }
+
   Widget _buildFieldLabel(String label) => Padding(
     padding: const EdgeInsets.only(top: 16, bottom: 8),
     child: Text(
@@ -167,7 +291,13 @@ class _StepthreeCheckinState extends State<StepthreeCheckin> {
     ),
   );
 
-  Widget _buildTextField(String hint) => TextField(
+  Widget _buildTextField(
+    String hint,
+    String initialValue,
+    Function(String) onChanged,
+  ) => TextFormField(
+    initialValue: initialValue,
+    onChanged: onChanged,
     decoration: InputDecoration(
       hintText: hint,
       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
@@ -182,7 +312,11 @@ class _StepthreeCheckinState extends State<StepthreeCheckin> {
     ),
   );
 
-  Widget _buildDropdownField(String value) => Container(
+  Widget _buildDropdownField(
+    String value,
+    List<String> items,
+    Function(String?) onChanged,
+  ) => Container(
     padding: const EdgeInsets.symmetric(horizontal: 16),
     decoration: BoxDecoration(
       borderRadius: BorderRadius.circular(15),
@@ -192,14 +326,20 @@ class _StepthreeCheckinState extends State<StepthreeCheckin> {
       value: value,
       isExpanded: true,
       underline: const SizedBox(),
-      items: [value]
+      items: items
           .map((String val) => DropdownMenuItem(value: val, child: Text(val)))
           .toList(),
-      onChanged: (_) {},
+      onChanged: onChanged,
     ),
   );
 
-  Widget _buildTextArea(String hint) => TextField(
+  Widget _buildTextArea(
+    String hint,
+    String initialValue,
+    Function(String) onChanged,
+  ) => TextFormField(
+    initialValue: initialValue,
+    onChanged: onChanged,
     maxLines: 4,
     decoration: InputDecoration(
       hintText: hint,
@@ -211,20 +351,6 @@ class _StepthreeCheckinState extends State<StepthreeCheckin> {
         borderRadius: BorderRadius.circular(15),
         borderSide: BorderSide(color: Colors.grey.shade200),
       ),
-    ),
-  );
-
-  Widget _buildUploadBox(String label) => Container(
-    decoration: BoxDecoration(
-      borderRadius: BorderRadius.circular(12),
-      border: Border.all(color: Colors.grey.shade200),
-    ),
-    child: Column(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        const Icon(Icons.add, color: Colors.blue),
-        Text(label, style: const TextStyle(fontSize: 10, color: Colors.grey)),
-      ],
     ),
   );
 
@@ -256,6 +382,7 @@ class _StepthreeCheckinState extends State<StepthreeCheckin> {
   );
 
   Widget _buildPrimaryButton(String text, VoidCallback onPressed) => Container(
+    width: double.infinity,
     decoration: BoxDecoration(
       gradient: const LinearGradient(
         colors: [Color(0xFF64B5F6), Color(0xFF3F51B5)],

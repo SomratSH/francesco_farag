@@ -1,21 +1,33 @@
 import 'package:flutter/material.dart';
 import 'package:francesco_farag/routing/app_route.dart';
+import 'package:francesco_farag/ui/agent/agent_provider.dart';
 import 'package:francesco_farag/ui/agent/rentals/checkin/stepone_checkin.dart';
 import 'package:go_router/go_router.dart';
+import 'package:provider/provider.dart';
+// import 'package:francesco_farag/providers/agent_provider.dart'; // Ensure correct path
 
 class StepsixCheckin extends StatelessWidget {
   const StepsixCheckin({super.key});
 
   @override
   Widget build(BuildContext context) {
+    // 1. Access the provider and its data map
+    final provider = Provider.of<AgentProvider>(context);
+    final data = provider.customerData;
+
+    // Helper to calculate photo count
+    final int photoCount =
+        (data['inspectionPhotos'] as List<dynamic>?)?.length ?? 0;
+
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
         backgroundColor: Colors.white,
         elevation: 0,
-        leading:  InkWell(
+        leading: InkWell(
           onTap: () => context.pop(),
-          child: Icon(Icons.arrow_back, color: Colors.black)),
+          child: const Icon(Icons.arrow_back, color: Colors.black),
+        ),
         title: const Text(
           'Check-in',
           style: TextStyle(color: Colors.black, fontWeight: FontWeight.w600),
@@ -37,81 +49,54 @@ class StepsixCheckin extends StatelessWidget {
             ),
             const SizedBox(height: 20),
 
-            // 1. Progress Stepper (Step 6 Active)
+            // Stepper (Step 6 Active)
             const StepperWidget(currentStep: 6),
             const SizedBox(height: 24),
 
-            // 2. Summary Sections
+            // 2. Summary Sections with LIVE DATA
             _buildReviewSection("Customer Info", [
-              _buildReviewRow("Name", "John Smith"),
-              _buildReviewRow("Email", "js@example.com"),
-              _buildReviewRow("Phone", "+4562000000000"),
-              _buildReviewRow("Address", "123 USB City More"),
-            ]),
-
-            _buildReviewSection("Billing Info", [
-              const Text(
-                "Same as customer address",
-                style: TextStyle(color: Colors.grey, fontSize: 13),
-              ),
+              _buildReviewRow("Name", data['fullName'] ?? "N/A"),
+              _buildReviewRow("Nationality", data['nationality'] ?? "N/A"),
+              _buildReviewRow("Address", data['address'] ?? "N/A"),
             ]),
 
             _buildReviewSection("Documents", [
-              _buildReviewRow("Type", "National ID"),
-              _buildReviewRow("Number", "659999962"),
-              _buildReviewRow("Expiry", "02-05-2028"),
+              _buildReviewRow(
+                "Type",
+                data['documentType'] ?? "Driving License",
+              ),
+              _buildReviewRow("Number", data['documentNumber'] ?? "N/A"),
+              _buildReviewRow("Expiry", data['documentExpiry'] ?? "N/A"),
               Row(
                 children: [
                   const Text(
                     "Status: ",
                     style: TextStyle(color: Colors.grey, fontSize: 13),
                   ),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 8,
-                      vertical: 2,
-                    ),
-                    decoration: BoxDecoration(
-                      color: Colors.orange.shade100,
-                      borderRadius: BorderRadius.circular(4),
-                    ),
-                    child: const Text(
-                      "Pending",
-                      style: TextStyle(
-                        color: Colors.orange,
-                        fontSize: 11,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ),
+                  _buildStatusChip(data['isVerified'] ?? false),
                 ],
               ),
             ]),
 
             _buildReviewSection("Vehicle Condition", [
-              _buildReviewRow("Exterior", "Good"),
-              _buildReviewRow("Interior", "Good"),
-              _buildReviewRow("Fuel Level", "Full"),
-              _buildReviewRow("Mileage", "km"),
-              _buildReviewRow("Photos", "0 uploaded"),
+              _buildReviewRow("Condition", data['carCondition'] ?? "Good"),
+              _buildReviewRow("Fuel Level", data['fuelLevel'] ?? "Full"),
+              _buildReviewRow("Mileage", "${data['startingKm']} KM"),
+              _buildReviewRow("Photos", "$photoCount uploaded"),
+              _buildReviewRow("Notes", data['inspectionNotes'] ?? "None"),
             ]),
-
-            // 3. Payment & Deposit Card (Stand-alone style)
-            _buildPaymentSummaryCard(),
 
             _buildReviewSection("Rental Details", [
-              _buildReviewRow("Booking ID", "BK-001"),
+              _buildReviewRow("Booking ID", "BK-001"), // Static or from data
               _buildReviewRow("Vehicle", "Toyota Camry"),
               _buildReviewRow("Rental Period", "2/26/2026 - 3/2/2026"),
-              _buildReviewRow("Location", "Downtown Branch"),
             ]),
 
-            // 4. CARGOS Integration Card
             _buildIntegrationCard(),
 
             const SizedBox(height: 24),
 
-            // 5. Navigation Buttons
+            // Navigation Buttons
             Row(
               children: [
                 Expanded(
@@ -120,8 +105,41 @@ class StepsixCheckin extends StatelessWidget {
                 const SizedBox(width: 16),
                 Expanded(
                   child: ElevatedButton.icon(
-                    onPressed: () {
-                      context.go(AppRoute.home);
+                    onPressed: () async {
+                      showDialog(
+                        context: context,
+                        barrierDismissible: false,
+                        builder: (context) =>
+                            const Center(child: CircularProgressIndicator()),
+                      );
+
+                      // Call API (Replace 235 with actual dynamic ID if available)
+                      bool success = await provider.submitCheckin(
+                        provider.selectCheckin.id!,
+                      );
+
+                      if (context.mounted) {
+                        Navigator.pop(context); // Close loading dialog
+
+                        if (success) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text(
+                                "Check-in Completed Successfully!",
+                                style: TextStyle(color: Colors.white),
+                              ),
+                              backgroundColor: Colors.green,
+                            ),
+                          );
+                          context.go(AppRoute.home);
+                        } else {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text("Failed to sync with server."),
+                            ),
+                          );
+                        }
+                      }
                     },
                     icon: const Icon(
                       Icons.check_circle_outline,
@@ -147,6 +165,24 @@ class StepsixCheckin extends StatelessWidget {
             ),
             const SizedBox(height: 30),
           ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildStatusChip(bool isVerified) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+      decoration: BoxDecoration(
+        color: isVerified ? Colors.green.shade100 : Colors.orange.shade100,
+        borderRadius: BorderRadius.circular(4),
+      ),
+      child: Text(
+        isVerified ? "Verified" : "Pending",
+        style: TextStyle(
+          color: isVerified ? Colors.green : Colors.orange,
+          fontSize: 11,
+          fontWeight: FontWeight.bold,
         ),
       ),
     );
@@ -209,36 +245,6 @@ class StepsixCheckin extends StatelessWidget {
     );
   }
 
-  Widget _buildPaymentSummaryCard() {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 16),
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.grey.shade100),
-      ),
-      child: Column(
-        children: [
-          const Row(
-            children: [
-              Icon(Icons.payment, size: 18),
-              SizedBox(width: 8),
-              Text(
-                'Payment & Deposit',
-                style: TextStyle(fontWeight: FontWeight.bold),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          _buildAmountRow("Rental Amount", "\$150"),
-          _buildAmountRow("Deposit Amount", "\$500"),
-          const Divider(),
-          _buildAmountRow("Total Amount", "\$650", isTotal: true),
-        ],
-      ),
-    );
-  }
-
   Widget _buildIntegrationCard() {
     return Container(
       padding: const EdgeInsets.all(16),
@@ -263,10 +269,10 @@ class StepsixCheckin extends StatelessWidget {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Column(
+                const Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
+                    Text(
                       "Sync Status",
                       style: TextStyle(
                         fontWeight: FontWeight.bold,
@@ -275,10 +281,7 @@ class StepsixCheckin extends StatelessWidget {
                     ),
                     Text(
                       "Ready to sync with CARGOS",
-                      style: TextStyle(
-                        color: Colors.grey.shade500,
-                        fontSize: 11,
-                      ),
+                      style: TextStyle(color: Colors.grey, fontSize: 11),
                     ),
                   ],
                 ),
@@ -297,33 +300,6 @@ class StepsixCheckin extends StatelessWidget {
                   ),
                 ),
               ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  // Reuse existing Button styles
-  Widget _buildAmountRow(String label, String amount, {bool isTotal = false}) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Text(
-            label,
-            style: TextStyle(
-              color: isTotal ? Colors.black : Colors.grey,
-              fontSize: 13,
-            ),
-          ),
-          Text(
-            amount,
-            style: TextStyle(
-              fontWeight: FontWeight.bold,
-              color: isTotal ? Colors.blue : Colors.black,
-              fontSize: isTotal ? 15 : 13,
             ),
           ),
         ],

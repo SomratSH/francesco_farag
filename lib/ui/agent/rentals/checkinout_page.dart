@@ -131,6 +131,7 @@ class BookingCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final provider = context.watch<AgentProvider>();
     bool isCheckIn = type == "checkin";
     Color statusColor = isCheckIn
         ? const Color(0xFF2196F3)
@@ -216,10 +217,15 @@ class BookingCard extends StatelessWidget {
           ),
           const SizedBox(height: 20),
           ElevatedButton.icon(
-            onPressed: () => context.push(
-              isCheckIn ? AppRoute.checkinFirstStep : AppRoute.checkinout,
-              extra: isCheckIn ? booking : null,
-            ),
+            onPressed: () {
+              isCheckIn ? provider.selectCheckinBooking(booking) : null;
+              context.push(
+                isCheckIn
+                    ? AppRoute.checkinFirstStep
+                    : AppRoute.checkoutProgess,
+                extra: isCheckIn ? booking : null,
+              );
+            },
             icon: const Icon(Icons.assignment_turned_in_outlined, size: 18),
             label: Text(isCheckIn ? "Check-in" : "Check-Out"),
             style: ElevatedButton.styleFrom(

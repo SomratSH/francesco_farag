@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:francesco_farag/ui/agent/agent_provider.dart';
 import 'package:francesco_farag/utils/app_colors.dart';
 import 'package:go_router/go_router.dart';
+import 'package:provider/provider.dart';
+// import 'package:francesco_farag/providers/agent_provider.dart'; // Ensure correct path
 
 class CheckoutProgessPage extends StatefulWidget {
   const CheckoutProgessPage({super.key});
@@ -11,19 +14,26 @@ class CheckoutProgessPage extends StatefulWidget {
 
 class _CheckoutProgessPageState extends State<CheckoutProgessPage> {
   int currentStep = 1;
+  double _fuelValue = 1.0; // 1.0 = Full, 0.5 = Half, 0.0 = Empty
+
+  String _getFuelLabel(double value) {
+    if (value >= 0.8) return "full";
+    if (value >= 0.4) return "half";
+    return "empty";
+  }
 
   @override
   Widget build(BuildContext context) {
+    final provider = Provider.of<AgentProvider>(context);
+
     return Scaffold(
       backgroundColor: const Color(0xFFF8F9FA),
       appBar: AppBar(
         backgroundColor: Colors.white,
         elevation: 0.5,
         leading: InkWell(
-          onTap: () {
-            context.pop();
-          },
-          child: Icon(Icons.arrow_back, color: Colors.black87),
+          onTap: () => context.pop(),
+          child: const Icon(Icons.arrow_back, color: Colors.black87),
         ),
         title: const Text(
           'Checkout',
@@ -57,7 +67,7 @@ class _CheckoutProgessPageState extends State<CheckoutProgessPage> {
           Expanded(
             child: SingleChildScrollView(
               padding: const EdgeInsets.all(20),
-              child: _buildStepContent(),
+              child: _buildStepContent(provider),
             ),
           ),
         ],
@@ -69,11 +79,9 @@ class _CheckoutProgessPageState extends State<CheckoutProgessPage> {
     return Row(
       children: [
         _stepIndicator(1, 'Inspection'),
-        SizedBox(width: 10),
-        // _stepConnector(currentStep > 1),
+        const SizedBox(width: 10),
         _stepIndicator(2, 'Charges'),
-        SizedBox(width: 10),
-        // _stepConnector(currentStep > 2),
+        const SizedBox(width: 10),
         _stepIndicator(3, 'Invoice'),
       ],
     );
@@ -106,27 +114,28 @@ class _CheckoutProgessPageState extends State<CheckoutProgessPage> {
     );
   }
 
-  Widget _buildStepContent() {
+  Widget _buildStepContent(AgentProvider provider) {
     switch (currentStep) {
       case 1:
-        return _stepFinalInspection();
+        return _stepFinalInspection(provider);
       case 2:
-        return _stepExtraCharges();
+        return _stepExtraCharges(provider);
       case 3:
-        return _stepFinalInvoice();
+        return _stepFinalInvoice(provider);
       default:
         return Container();
     }
   }
 
   // --- STEP 1: FINAL INSPECTION ---
-  Widget _stepFinalInspection() {
+  Widget _stepFinalInspection(AgentProvider provider) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         _sectionCard(
           title: 'Step 1: Final Inspection',
           child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               const Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -153,6 +162,7 @@ class _CheckoutProgessPageState extends State<CheckoutProgessPage> {
               const SizedBox(height: 10),
               GridView.count(
                 shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
                 crossAxisCount: 2,
                 mainAxisSpacing: 10,
                 crossAxisSpacing: 10,
@@ -167,22 +177,38 @@ class _CheckoutProgessPageState extends State<CheckoutProgessPage> {
               const SizedBox(height: 10),
               _fullWidthButton('Upload Interior Photo', isOutlined: true),
               const SizedBox(height: 20),
-              _customInput('Ending Kilometer Reading', 'Enter ending KM'),
+              _customInput(
+                'Ending Kilometer Reading',
+                'Enter ending KM',
+                onChanged: (v) => provider.updateCheckoutField(
+                  'checkout_ending_km',
+                  int.tryParse(v) ?? 0,
+                ),
+                isNumber: true,
+              ),
               const SizedBox(height: 20),
-              const Text(
-                'Fuel Level: 100%',
-                style: TextStyle(fontSize: 12, color: Colors.grey),
+              Text(
+                'Fuel Level: ${(_fuelValue * 100).toInt()}% (${_getFuelLabel(_fuelValue)})',
+                style: const TextStyle(fontSize: 12, color: Colors.grey),
               ),
               Slider(
-                value: 1.0,
-                onChanged: (v) {},
+                value: _fuelValue,
+                onChanged: (v) {
+                  setState(() => _fuelValue = v);
+                  provider.updateCheckoutField(
+                    'checkout_fuel_level',
+                    _getFuelLabel(v),
+                  );
+                },
                 activeColor: Colors.blue,
                 inactiveColor: Colors.grey.shade200,
               ),
               _customInput(
                 'Damage Notes (if any)',
-                'Describe any new damage...',
+                'No new damage',
                 maxLines: 3,
+                onChanged: (v) =>
+                    provider.updateCheckoutField('checkout_damage_notes', v),
               ),
               const SizedBox(height: 20),
               _gradientButton(
@@ -197,16 +223,57 @@ class _CheckoutProgessPageState extends State<CheckoutProgessPage> {
   }
 
   // --- STEP 2: EXTRA CHARGES ---
-  Widget _stepExtraCharges() {
+  Widget _stepExtraCharges(AgentProvider provider) {
     return _sectionCard(
       title: 'Step 2: Extra Charges',
       child: Column(
         children: [
-          _priceInputField('Damage Charge', '375'),
-          _priceInputField('Late Return Charge', '375'),
-          _priceInputField('Extra KM Charge', '375'),
-          _priceInputField('Fuel Charge', '375'),
-          _customInput('Description (e.g., Cleaning fee)', '75'),
+          _priceInputField(
+            'Damage Charge',
+            '75',
+            (v) => provider.updateCheckoutField(
+              'checkout_damage_charge',
+              double.tryParse(v) ?? 0,
+            ),
+          ),
+          _priceInputField(
+            'Late Return Charge',
+            '0',
+            (v) => provider.updateCheckoutField(
+              'checkout_late_return_charge',
+              double.tryParse(v) ?? 0,
+            ),
+          ),
+          _priceInputField(
+            'Extra KM Charge',
+            '400',
+            (v) => provider.updateCheckoutField(
+              'checkout_extra_km_charge',
+              double.tryParse(v) ?? 0,
+            ),
+          ),
+          _priceInputField(
+            'Fuel Charge',
+            '40',
+            (v) => provider.updateCheckoutField(
+              'checkout_fuel_charge',
+              double.tryParse(v) ?? 0,
+            ),
+          ),
+          _priceInputField(
+            'Cleaning Fee',
+            '75',
+            (v) => provider.updateCheckoutField(
+              'checkout_cleaning_fee',
+              double.tryParse(v) ?? 0,
+            ),
+          ),
+          _customInput(
+            'Description (Notes)',
+            'Cleaning fee applied',
+            onChanged: (v) =>
+                provider.updateCheckoutField('checkout_extra_charge_notes', v),
+          ),
           const SizedBox(height: 30),
           Row(
             children: [
@@ -232,7 +299,9 @@ class _CheckoutProgessPageState extends State<CheckoutProgessPage> {
   }
 
   // --- STEP 3: FINAL INVOICE ---
-  Widget _stepFinalInvoice() {
+  Widget _stepFinalInvoice(AgentProvider provider) {
+    final data = provider.checkoutData;
+
     return _sectionCard(
       title: 'Step 3: Final Invoice',
       child: Column(
@@ -244,30 +313,50 @@ class _CheckoutProgessPageState extends State<CheckoutProgessPage> {
           ),
           const SizedBox(height: 15),
           _invoiceRow('Base Rental', '€287.00'),
-          _invoiceRow('Damage Charge', '€-2.00'),
-          _invoiceRow('Late Return', '€-2.00'),
-          _invoiceRow('Extra KM', '€-4.00'),
-          _invoiceRow('Fuel Charge', '€-4.00'),
+          _invoiceRow('Damage Charge', '€${data['checkout_damage_charge']}'),
+          _invoiceRow('Cleaning Fee', '€${data['checkout_cleaning_fee']}'),
           const Divider(),
           _invoiceRow(
             'Total Amount:',
-            '€285.00',
+            '€285.00', // You can calculate this dynamically
             isBold: true,
             color: Colors.blue,
           ),
-          const SizedBox(height: 20),
-          const Text(
-            'Rental Summary',
-            style: TextStyle(fontWeight: FontWeight.bold),
-          ),
-          _invoiceRow('Duration:', '3 days'),
-          _invoiceRow('KM Used:', '-15428 km'),
-          _invoiceRow('Start KM:', '15420'),
-          _invoiceRow('End KM:', '-8'),
           const SizedBox(height: 30),
           _fullWidthButton('Generate Final Invoice', isOutlined: true),
           const SizedBox(height: 10),
-          _gradientButton2('Send to Client', () {}),
+          _gradientButton2('Send to Client & Finalize', () async {
+            // Show Loader
+            showDialog(
+              context: context,
+              barrierDismissible: false,
+              builder: (context) => const Center(
+                child: CircularProgressIndicator(color: Colors.blue),
+              ),
+            );
+
+            bool success = await provider.submitCheckout(413);
+
+            if (mounted) {
+              Navigator.pop(context); // Remove Loader
+              if (success) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text("Checkout Successful!"),
+                    backgroundColor: Colors.green,
+                  ),
+                );
+                context.pop();
+              } else {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text("Failed to update checkout."),
+                    backgroundColor: Colors.red,
+                  ),
+                );
+              }
+            }
+          }),
         ],
       ),
     );
@@ -281,6 +370,9 @@ class _CheckoutProgessPageState extends State<CheckoutProgessPage> {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -296,39 +388,57 @@ class _CheckoutProgessPageState extends State<CheckoutProgessPage> {
   Widget _uploadPlaceholder(String label) {
     return Container(
       decoration: BoxDecoration(
-        border: Border.all(color: Colors.grey.shade100),
+        border: Border.all(color: Colors.grey.shade200),
         borderRadius: BorderRadius.circular(12),
       ),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const Icon(Icons.upload_outlined, color: Colors.grey),
+          const Icon(Icons.camera_alt_outlined, color: Colors.grey, size: 20),
           Text(label, style: const TextStyle(fontSize: 10, color: Colors.grey)),
         ],
       ),
     );
   }
 
-  Widget _customInput(String label, String hint, {int maxLines = 1}) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          label,
-          style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
-        ),
-        TextField(
-          maxLines: maxLines,
-          decoration: InputDecoration(
-            hintText: hint,
-            hintStyle: const TextStyle(fontSize: 12, color: Colors.grey),
+  Widget _customInput(
+    String label,
+    String hint, {
+    int maxLines = 1,
+    Function(String)? onChanged,
+    bool isNumber = false,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            label,
+            style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
           ),
-        ),
-      ],
+          TextField(
+            maxLines: maxLines,
+            onChanged: onChanged,
+            keyboardType: isNumber ? TextInputType.number : TextInputType.text,
+            decoration: InputDecoration(
+              hintText: hint,
+              hintStyle: const TextStyle(fontSize: 12, color: Colors.grey),
+              enabledBorder: const UnderlineInputBorder(
+                borderSide: BorderSide(color: Color(0xFFEEEEEE)),
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 
-  Widget _priceInputField(String label, String value) {
+  Widget _priceInputField(
+    String label,
+    String hint,
+    Function(String)? onChanged,
+  ) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 15),
       child: Column(
@@ -339,7 +449,15 @@ class _CheckoutProgessPageState extends State<CheckoutProgessPage> {
             style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
           ),
           TextField(
-            decoration: InputDecoration(prefixText: '\$ ', hintText: value),
+            onChanged: onChanged,
+            keyboardType: TextInputType.number,
+            decoration: InputDecoration(
+              prefixText: '€ ',
+              hintText: hint,
+              enabledBorder: const UnderlineInputBorder(
+                borderSide: BorderSide(color: Color(0xFFEEEEEE)),
+              ),
+            ),
           ),
         ],
       ),
@@ -371,19 +489,16 @@ class _CheckoutProgessPageState extends State<CheckoutProgessPage> {
   }
 
   Widget _gradientButton(String label, VoidCallback onPress) {
-    return Container(
-      width: double.infinity,
-      height: 50,
-      decoration: BoxDecoration(
-        color: Color(0xffFF67c2).withOpacity(0.15),
-        border: Border.all(color: Color(0xffD3037F)),
-        borderRadius: BorderRadius.circular(25),
-      ),
-      child: ElevatedButton(
-        onPressed: onPress,
-        style: ElevatedButton.styleFrom(
-          backgroundColor: Colors.transparent,
-          shadowColor: Colors.transparent,
+    return InkWell(
+      onTap: onPress,
+      child: Container(
+        width: double.infinity,
+        height: 50,
+        alignment: Alignment.center,
+        decoration: BoxDecoration(
+          color: const Color(0xffFF67c2).withOpacity(0.1),
+          border: Border.all(color: const Color(0xffD3037F)),
+          borderRadius: BorderRadius.circular(25),
         ),
         child: Text(
           label,
@@ -397,25 +512,21 @@ class _CheckoutProgessPageState extends State<CheckoutProgessPage> {
   }
 
   Widget _gradientButton2(String label, VoidCallback onPress) {
-    return Container(
-      width: double.infinity,
-      height: 50,
-      decoration: BoxDecoration(
-        gradient: AppColors().gradientBlue,
-
-        borderRadius: BorderRadius.circular(25),
-      ),
-      child: ElevatedButton(
-        onPressed: onPress,
-        style: ElevatedButton.styleFrom(
-          backgroundColor: Colors.transparent,
-          shadowColor: Colors.transparent,
+    return InkWell(
+      onTap: onPress,
+      child: Container(
+        width: double.infinity,
+        height: 50,
+        alignment: Alignment.center,
+        decoration: BoxDecoration(
+          gradient: AppColors().gradientBlue,
+          borderRadius: BorderRadius.circular(25),
         ),
         child: Text(
           label,
           style: const TextStyle(
             color: Colors.white,
-            fontSize: 12,
+            fontSize: 13,
             fontWeight: FontWeight.bold,
           ),
         ),
@@ -439,7 +550,10 @@ class _CheckoutProgessPageState extends State<CheckoutProgessPage> {
             borderRadius: BorderRadius.circular(25),
           ),
         ),
-        child: Text(label, style: const TextStyle(color: Colors.black)),
+        child: Text(
+          label,
+          style: const TextStyle(color: Colors.black, fontSize: 13),
+        ),
       ),
     );
   }

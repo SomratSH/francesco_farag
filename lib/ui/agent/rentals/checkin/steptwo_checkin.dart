@@ -28,7 +28,7 @@ class _SteptwoCheckinState extends State<SteptwoCheckin> {
   void initState() {
     super.initState();
     // 2. Initialize controllers with current values from Provider
-    final data = context.read<AgentProvider>().checkInData;
+    final data = context.read<AgentProvider>().customerData;
 
     _nameController = TextEditingController(text: data['fullName']);
     _dobController = TextEditingController(text: data['dob']);
@@ -59,7 +59,7 @@ class _SteptwoCheckinState extends State<SteptwoCheckin> {
   @override
   Widget build(BuildContext context) {
     final provider = context.watch<AgentProvider>();
-    final data = provider.checkInData;
+    final data = provider.customerData;
 
     return Scaffold(
       backgroundColor: Colors.white,
@@ -130,7 +130,10 @@ class _SteptwoCheckinState extends State<SteptwoCheckin> {
                     value: data['billingSameAsCustomer'],
                     activeColor: const Color(0xFF2962FF),
                     onChanged: (val) {
-                      provider.updateCheckInField('billingSameAsCustomer', val);
+                      provider.updateCustomerField(
+                        'billingSameAsCustomer',
+                        val,
+                      );
                     },
                   ),
                 ],
@@ -143,32 +146,32 @@ class _SteptwoCheckinState extends State<SteptwoCheckin> {
             _buildInputField("Full Name", "Enter full name", _nameController, (
               val,
             ) {
-              provider.updateCheckInField('fullName', val);
+              provider.updateCustomerField('fullName', val);
             }),
             _buildInputField("Date of Birth", "mm/dd/yyyy", _dobController, (
               val,
             ) {
-              provider.updateCheckInField('dob', val);
+              provider.updateCustomerField('dob', val);
             }),
             _buildInputField(
               "Nationality",
               "Enter nationality",
               _nationalityController,
               (val) {
-                provider.updateCheckInField('nationality', val);
+                provider.updateCustomerField('nationality', val);
               },
             ),
             _buildInputField("Address", "Enter address", _addressController, (
               val,
             ) {
-              provider.updateCheckInField('address', val);
+              provider.updateCustomerField('address', val);
             }),
             _buildInputField(
               "Driving Licenses Number",
               "Enter licenses number",
               _licenseController,
               (val) {
-                provider.updateCheckInField('licenseNumber', val);
+                provider.updateCustomerField('licenseNumber', val);
               },
             ),
             _buildInputField(
@@ -176,7 +179,7 @@ class _SteptwoCheckinState extends State<SteptwoCheckin> {
               "Enter date",
               _licenseExpiryController,
               (val) {
-                provider.updateCheckInField('licenseExpiry', val);
+                provider.updateCustomerField('licenseExpiry', val);
               },
             ),
             _buildInputField(
@@ -184,7 +187,7 @@ class _SteptwoCheckinState extends State<SteptwoCheckin> {
               "Enter number",
               _idController,
               (val) {
-                provider.updateCheckInField('idNumber', val);
+                provider.updateCustomerField('idNumber', val);
               },
             ),
             _buildInputField(
@@ -192,7 +195,7 @@ class _SteptwoCheckinState extends State<SteptwoCheckin> {
               "Enter date",
               _idExpiryController,
               (val) {
-                provider.updateCheckInField('idExpiry', val);
+                provider.updateCustomerField('idExpiry', val);
               },
             ),
 

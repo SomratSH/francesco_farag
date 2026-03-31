@@ -1,8 +1,13 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:francesco_farag/routing/app_route.dart';
+import 'package:francesco_farag/ui/agent/agent_provider.dart';
 import 'package:francesco_farag/ui/agent/rentals/checkin/stepone_checkin.dart';
 import 'package:go_router/go_router.dart';
+import 'package:provider/provider.dart';
+import 'package:image_picker/image_picker.dart';
+// import 'package:francesco_farag/providers/agent_provider.dart';
 
 class StepfourCheckin extends StatefulWidget {
   const StepfourCheckin({super.key});
@@ -12,11 +17,20 @@ class StepfourCheckin extends StatefulWidget {
 }
 
 class _StepfourCheckinState extends State<StepfourCheckin> {
-  bool _isVerified = false;
-  String _selectedDocType = "Driving License";
+  final ImagePicker _picker = ImagePicker();
+
+  Future<void> _pickDocImage(AgentProvider provider, String key) async {
+    final XFile? image = await _picker.pickImage(source: ImageSource.gallery);
+    if (image != null) {
+      provider.updateDocImage(key, image.path);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
+    final provider = Provider.of<AgentProvider>(context);
+    final data = provider.customerData;
+
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
@@ -24,7 +38,7 @@ class _StepfourCheckinState extends State<StepfourCheckin> {
         elevation: 0,
         leading: InkWell(
           onTap: () => context.pop(),
-          child: Icon(Icons.arrow_back, color: Colors.black),
+          child: const Icon(Icons.arrow_back, color: Colors.black),
         ),
         title: const Text(
           'Check-in',
@@ -47,23 +61,18 @@ class _StepfourCheckinState extends State<StepfourCheckin> {
             ),
             const SizedBox(height: 20),
 
-            // 1. Progress Stepper (Step 4 Active)
             const StepperWidget(currentStep: 4),
             const SizedBox(height: 24),
 
-            // 2. Verification Status Card
-            _buildVerificationCard(),
+            _buildVerificationCard(provider, data),
             const SizedBox(height: 20),
 
-            // 3. Document Upload Boxes
-            _buildUploadSection(),
+            _buildUploadSection(provider, data),
             const SizedBox(height: 20),
 
-            // 4. Document Information Form
-            _buildDocInfoForm(),
+            _buildDocInfoForm(provider, data),
             const SizedBox(height: 24),
 
-            // 5. Navigation
             Row(
               children: [
                 Expanded(
@@ -72,7 +81,7 @@ class _StepfourCheckinState extends State<StepfourCheckin> {
                 const SizedBox(width: 16),
                 Expanded(
                   child: _buildPrimaryButton("Next Step", () {
-                    context.push(AppRoute.checkinFiveStep);
+                    context.push(AppRoute.checkinSixStep);
                   }),
                 ),
               ],
@@ -84,7 +93,7 @@ class _StepfourCheckinState extends State<StepfourCheckin> {
     );
   }
 
-  Widget _buildVerificationCard() {
+  Widget _buildVerificationCard(AgentProvider provider, Map data) {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -108,16 +117,16 @@ class _StepfourCheckinState extends State<StepfourCheckin> {
             ],
           ),
           CupertinoSwitch(
-            value: _isVerified,
+            value: data['isVerified'] ?? false,
             activeColor: const Color(0xFF2962FF),
-            onChanged: (val) => setState(() => _isVerified = val),
+            onChanged: (val) => provider.updateCustomerField('isVerified', val),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildUploadSection() {
+  Widget _buildUploadSection(AgentProvider provider, Map data) {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -132,15 +141,30 @@ class _StepfourCheckinState extends State<StepfourCheckin> {
             style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
           ),
           const SizedBox(height: 16),
-          _buildDottedUploadBox("Document Front Image *", "Upload front image"),
+          _buildDottedUploadBox(
+            "Document Front Image *",
+            "Upload front image",
+            data['docFrontImage'],
+            () => _pickDocImage(provider, 'docFrontImage'),
+          ),
           const SizedBox(height: 16),
-          _buildDottedUploadBox("Document Back Image *", "Upload back image"),
+          _buildDottedUploadBox(
+            "Document Back Image *",
+            "Upload back image",
+            data['docBackImage'],
+            () => _pickDocImage(provider, 'docBackImage'),
+          ),
         ],
       ),
     );
   }
 
-  Widget _buildDottedUploadBox(String label, String hint) {
+  Widget _buildDottedUploadBox(
+    String label,
+    String hint,
+    String? imagePath,
+    VoidCallback onTap,
+  ) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -149,32 +173,38 @@ class _StepfourCheckinState extends State<StepfourCheckin> {
           style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500),
         ),
         const SizedBox(height: 8),
-        Container(
-          height: 100,
-          width: double.infinity,
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(
-              color: Colors.grey.shade300,
-              style: BorderStyle.solid,
-            ), // Note: For true dotted use 'dotted_border' package
-          ),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              const Icon(Icons.upload_outlined, color: Colors.grey),
-              Text(
-                hint,
-                style: const TextStyle(color: Colors.grey, fontSize: 12),
-              ),
-            ],
+        InkWell(
+          onTap: onTap,
+          child: Container(
+            height: 120,
+            width: double.infinity,
+            clipBehavior: Clip.antiAlias,
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: Colors.grey.shade300),
+            ),
+            child: imagePath != null
+                ? Image.file(File(imagePath), fit: BoxFit.cover)
+                : Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Icon(Icons.upload_outlined, color: Colors.grey),
+                      Text(
+                        hint,
+                        style: const TextStyle(
+                          color: Colors.grey,
+                          fontSize: 12,
+                        ),
+                      ),
+                    ],
+                  ),
           ),
         ),
       ],
     );
   }
 
-  Widget _buildDocInfoForm() {
+  Widget _buildDocInfoForm(AgentProvider provider, Map data) {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -190,17 +220,22 @@ class _StepfourCheckinState extends State<StepfourCheckin> {
           ),
           const SizedBox(height: 16),
           _buildFieldLabel("Document Type"),
-          _buildDropdownField(_selectedDocType),
+          _buildDropdownField(data['documentType'] ?? "Driving License", (val) {
+            provider.updateCustomerField('documentType', val);
+          }),
           _buildFieldLabel("Document Number"),
-          _buildTextField("DL-123456789"),
+          _buildTextField("DL-123456789", data['documentNumber'], (val) {
+            provider.updateCustomerField('documentNumber', val);
+          }),
           _buildFieldLabel("Expiry Date"),
-          _buildTextField("mm/dd/yyyy"),
+          _buildTextField("mm/dd/yyyy", data['documentExpiry'], (val) {
+            provider.updateCustomerField('documentExpiry', val);
+          }),
         ],
       ),
     );
   }
 
-  // Common UI Helpers (Consistent with previous steps)
   Widget _buildFieldLabel(String label) => Padding(
     padding: const EdgeInsets.only(top: 12, bottom: 8),
     child: Text(
@@ -209,7 +244,13 @@ class _StepfourCheckinState extends State<StepfourCheckin> {
     ),
   );
 
-  Widget _buildTextField(String hint) => TextField(
+  Widget _buildTextField(
+    String hint,
+    String? initialValue,
+    Function(String) onChanged,
+  ) => TextFormField(
+    initialValue: initialValue,
+    onChanged: onChanged,
     decoration: InputDecoration(
       hintText: hint,
       filled: true,
@@ -222,26 +263,28 @@ class _StepfourCheckinState extends State<StepfourCheckin> {
     ),
   );
 
-  Widget _buildDropdownField(String value) => Container(
-    padding: const EdgeInsets.symmetric(horizontal: 16),
-    decoration: BoxDecoration(
-      color: Colors.grey.shade50,
-      borderRadius: BorderRadius.circular(15),
-    ),
-    child: DropdownButton<String>(
-      value: value,
-      isExpanded: true,
-      underline: const SizedBox(),
-      items: [
-        "Driving License",
-        "Passport",
-        "National ID",
-      ].map((v) => DropdownMenuItem(value: v, child: Text(v))).toList(),
-      onChanged: (val) => setState(() => _selectedDocType = val!),
-    ),
-  );
+  Widget _buildDropdownField(String value, Function(String?) onChanged) =>
+      Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16),
+        decoration: BoxDecoration(
+          color: Colors.grey.shade50,
+          borderRadius: BorderRadius.circular(15),
+        ),
+        child: DropdownButton<String>(
+          value: value,
+          isExpanded: true,
+          underline: const SizedBox(),
+          items: [
+            "Driving License",
+            "Passport",
+            "National ID",
+          ].map((v) => DropdownMenuItem(value: v, child: Text(v))).toList(),
+          onChanged: onChanged,
+        ),
+      );
 
   Widget _buildPrimaryButton(String text, VoidCallback onPressed) => Container(
+    width: double.infinity,
     decoration: BoxDecoration(
       gradient: const LinearGradient(
         colors: [Color(0xFF64B5F6), Color(0xFF3F51B5)],
